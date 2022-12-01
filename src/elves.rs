@@ -32,31 +32,56 @@ impl Elf {
 }
 
 /// The band of elves looking for start fruits
-/// ```
-/// use aoc2022::Elves;
-/// 
-/// let cargo = Vec::from([
-///   Vec::from([1000, 2000, 3000]),
-///   Vec::from([4000]),
-///   Vec::from([5000, 6000]),
-///   Vec::from([7000, 8000, 9000]),
-///   Vec::from([10000]),
-/// ]);
-/// let elves = Elves::new(cargo);
-/// assert_eq!(elves.maximum_supply(), 24000 as u32);
-/// ```
 pub struct Elves(Vec<Elf>);
 impl Elves {
     pub fn new(c: Vec<Vec<u32>>) -> Self {
         let elves: Vec<Elf> = c.into_iter().map(|c| Elf::new(c)).collect();
         Self(elves)
     }
+    
+    fn sort_by_supply(&mut self) {
+        self.0.sort_by(|a, b| b.supplied_calories().cmp(&a.supplied_calories()));
+    }
 
-    pub fn maximum_supply(&self) -> Calories {
+    /// Return total calories carried by the n strongest elves
+    /// ```
+    /// use aoc2022::Elves;
+    ///
+    /// let cargo = Vec::from([
+    ///   Vec::from([1000, 2000, 3000]),
+    ///   Vec::from([4000]),
+    ///   Vec::from([5000, 6000]),
+    ///   Vec::from([7000, 8000, 9000]),
+    ///   Vec::from([10000]),
+    /// ]);
+    /// let mut elves = Elves::new(cargo);
+    /// assert_eq!(elves.total_calories_by_top(3), 45000 as u32);
+    /// ```
+    pub fn total_calories_by_top(&mut self, number: usize) -> Calories {
+        self.sort_by_supply();
         self.0
             .iter()
+            .take(number)
             .map(|e| e.supplied_calories())
-            .reduce(|accum, s| if accum > s { accum } else { s })
+            .reduce(|a, c| a + c)
             .unwrap()
+    }
+
+    /// Return calories supplied by the strongest elf
+    /// ```
+    /// use aoc2022::Elves;
+    ///
+    /// let cargo = Vec::from([
+    ///   Vec::from([1000, 2000, 3000]),
+    ///   Vec::from([4000]),
+    ///   Vec::from([5000, 6000]),
+    ///   Vec::from([7000, 8000, 9000]),
+    ///   Vec::from([10000]),
+    /// ]);
+    /// let mut elves = Elves::new(cargo);
+    /// assert_eq!(elves.maximum_supply(), 24000 as u32);
+    /// ```
+    pub fn maximum_supply(&mut self) -> Calories {
+        self.total_calories_by_top(1)
     }
 }
