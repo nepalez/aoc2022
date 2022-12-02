@@ -1,7 +1,9 @@
 mod elves;
 mod input;
+mod rock_paper_scissors;
 
 use elves::*;
+use rock_paper_scissors::*;
 use input::*;
 
 fn main() {
@@ -25,5 +27,16 @@ fn main() {
         );
     } else {
         println!("2. That's sad! Elves lost their food somewhere!");
+    }
+    
+    // the 3rd star
+    if let Some(data) = Input::load_strategy("data/3.in") {
+        if let Some(strategy) = Strategy::new(data) {
+            println!("3. My score will be {}", strategy.score());
+        } else {
+            println!("3. The strategy is written in Quenya. I need the translator.");
+        }
+    } else {
+        println!("3. Alas :(. The elf took his strategy and run away!");
     }
 }
