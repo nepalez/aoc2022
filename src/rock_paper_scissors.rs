@@ -1,35 +1,34 @@
 #[derive(Debug)]
-pub struct Round(char, char);
+pub struct Round(u32);
 impl Round {
-    pub fn from(input: (char, char)) -> Option<Self> {
-        let left = match input.0 {
-            'A' => Some('R'),
-            'B' => Some('P'),
-            'C' => Some('S'),
-            _ => None,
-        }?;
-        let right = match input.1 {
-            'X' => Some('R'),
-            'Y' => Some('P'),
-            'Z' => Some('S'),
-            _ => None,
-        }?;
-        Some(Self(left, right))
+    pub fn misinterpret(input: (char, char)) -> Option<Self> {
+        let mut list = [
+            ('B', 'X'), // PR
+            ('C', 'Y'), // SP
+            ('A', 'Z'), // RS
+            ('A', 'X'), // RR
+            ('B', 'Y'), // PP
+            ('C', 'Z'), // SS
+            ('C', 'X'), // SR
+            ('A', 'Y'), // RP
+            ('B', 'Z'), // PS
+        ].iter();
+        Some(Round(list.position(|a| a == &input)? as u32 + 1))
     }
     
-    pub fn score(&self) -> u32 {
-        match self {
-            Round('P', 'R') => 1,
-            Round('S', 'P') => 2,
-            Round('R', 'S') => 3,
-            Round('R', 'R') => 4,
-            Round('P', 'P') => 5,
-            Round('S', 'S') => 6,
-            Round('S', 'R') => 7,
-            Round('R', 'P') => 8,
-            Round('P', 'S') => 9,
-            _ => 0,
-        }
+    pub fn interpret(input: (char, char)) -> Option<Self> {
+        let mut list = [
+            ('B', 'X'), // PR
+            ('C', 'X'), // SP
+            ('A', 'X'), // RS
+            ('A', 'Y'), // RR
+            ('B', 'Y'), // PP
+            ('C', 'Y'), // SS
+            ('C', 'Z'), // SR
+            ('A', 'Z'), // RP
+            ('B', 'Z'), // PS
+        ].iter();
+        Some(Round(list.position(|a| a == &input)? as u32 + 1))
     }
 }
 
@@ -42,15 +41,23 @@ impl Round {
 ///   ('B', 'X'),
 ///   ('C', 'Z'),
 /// ]);
-/// let strategy = Strategy::new(input).unwrap();
+/// let strategy = Strategy::misinterpret(input).unwrap();
 /// assert_eq!(strategy.score(), 15);
+/// 
+/// let input: Vec<(char, char)> = Vec::from([
+///   ('A', 'Y'),
+///   ('B', 'X'),
+///   ('C', 'Z'),
+/// ]);
+/// let strategy = Strategy::interpret(input).unwrap();
+/// assert_eq!(strategy.score(), 12);
 /// ```
 #[derive(Debug)]
 pub struct Strategy(Vec<Round>);
 impl Strategy {
-    pub fn new(data: Vec<(char, char)>) -> Option<Self> {
+    pub fn misinterpret(data: Vec<(char, char)>) -> Option<Self> {
         let mut rounds: Vec<Round> = Vec::with_capacity(data.len());
-        for i in data.iter().map(|&r| Round::from(r)) {
+        for i in data.iter().map(|&r| Round::misinterpret(r)) {
             if let Some(round) = i {
                 rounds.push(round);
             } else {
@@ -59,8 +66,20 @@ impl Strategy {
         }
         Some(Self(rounds))
     }
-    
+
+    pub fn interpret(data: Vec<(char, char)>) -> Option<Self> {
+        let mut rounds: Vec<Round> = Vec::with_capacity(data.len());
+        for i in data.iter().map(|&r| Round::interpret(r)) {
+            if let Some(round) = i {
+                rounds.push(round);
+            } else {
+                return None;
+            }
+        }
+        Some(Self(rounds))
+    }
+
     pub fn score(&self) -> u32 {
-        self.0.iter().map(|r| r.score()).fold(0, |result, score| result + score)
+        self.0.iter().map(|r| r.0).fold(0, |result, score| result + score)
     }
 }

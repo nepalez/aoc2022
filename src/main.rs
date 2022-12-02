@@ -31,12 +31,23 @@ fn main() {
     
     // the 3rd star
     if let Some(data) = Input::load_strategy("data/3.in") {
-        if let Some(strategy) = Strategy::new(data) {
-            println!("3. My score will be {}", strategy.score());
+        if let Some(strategy) = Strategy::misinterpret(data) {
+            println!("3. My score should be {}", strategy.score());
         } else {
             println!("3. The strategy is written in Quenya. I need the translator.");
         }
     } else {
         println!("3. Alas :(. The elf took his strategy and run away!");
+    }
+
+    // the 4th star
+    if let Some(data) = Input::load_strategy("data/3.in") {
+        if let Some(strategy) = Strategy::interpret(data) {
+            println!("4. Oh, no! My score is {}", strategy.score());
+        } else {
+            println!("4. The strategy is written in Quenya. I need the translator.");
+        }
+    } else {
+        println!("4. Alas :(. The elf took his strategy and run away!");
     }
 }
