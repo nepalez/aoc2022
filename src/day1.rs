@@ -1,3 +1,5 @@
+use std::fs;
+
 /// A number of calories tha provide an energy to an elf.
 /// Not to be confused with other values like the number of songs an elf knows,
 /// because a song can lift his the spirit but cannot feed his body.
@@ -34,6 +36,16 @@ impl Elf {
 /// The band of elves looking for start fruits
 pub struct Elves(Vec<Elf>);
 impl Elves {
+    pub fn load_from(path: &str) -> Option<Self> {
+        let data = fs::read_to_string(path).ok()?;
+
+        let cargo: Vec<Vec<u32>> = data.split("\n\n").map(|i| {
+            i.split('\n').map(|i| i.parse().unwrap()).collect()
+        }).collect();
+
+        Some(Self::new(cargo))
+    }
+
     pub fn new(c: Vec<Vec<u32>>) -> Self {
         let elves: Vec<Elf> = c.into_iter().map(|c| Elf::new(c)).collect();
         Self(elves)

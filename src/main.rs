@@ -1,53 +1,34 @@
-mod elves;
-mod input;
-mod rock_paper_scissors;
+mod day1;
+mod day2;
+mod day3;
 
-use elves::*;
-use rock_paper_scissors::*;
-use input::*;
+use day1::*;
+use day2::*;
+use day3::*;
 
 fn main() {
-    // the 1st star
-    if let Some(cargo) = Input::load_cargo("data/1.in") {
-        let mut elves = Elves::new(cargo);
-        println!(
-            "1. The strongest elf carries {:?} calories! What a strong beast!",
-            elves.maximum_supply(),
-        );
+    if let Some(mut elves) = Elves::load_from("data/1.in") {
+        println!("1.1: The strongest elf carries {:?} calories", elves.maximum_supply());
+        println!("1.2: The strongest 3 elves carry {:?} calories", elves.total_calories_by_top(3));
     } else {
-        println!("1. That's sad! Elves forgot their food at home!");
-    }
-    
-    // the 2nd star
-    if let Some(cargo) = Input::load_cargo("data/2.in") {
-        let mut elves = Elves::new(cargo);
-        println!(
-            "2. The strongest 3 elves carry {:?} calories! They are so thoughtful!",
-            elves.total_calories_by_top(3),
-        );
-    } else {
-        println!("2. That's sad! Elves lost their food somewhere!");
-    }
-    
-    // the 3rd star
-    if let Some(data) = Input::load_strategy("data/3.in") {
-        if let Some(strategy) = Strategy::misinterpret(data) {
-            println!("3. My score should be {}", strategy.score());
-        } else {
-            println!("3. The strategy is written in Quenya. I need the translator.");
-        }
-    } else {
-        println!("3. Alas :(. The elf took his strategy and run away!");
+        println!("1: Cannot parse input!");
     }
 
-    // the 4th star
-    if let Some(data) = Input::load_strategy("data/3.in") {
-        if let Some(strategy) = Strategy::interpret(data) {
-            println!("4. Oh, no! My score is {}", strategy.score());
-        } else {
-            println!("4. The strategy is written in Quenya. I need the translator.");
+    if let Some(input) = day2::Input::load_from("data/2.in") {
+        if let Some(strategy) = Strategy::misinterpret(&input) {
+            println!("2.1. Misinterpreted input's score is {}", strategy.score());
+        }
+        if let Some(strategy) = Strategy::interpret(&input) {
+            println!("2.2. A proper input's score is {}", strategy.score());
         }
     } else {
-        println!("4. Alas :(. The elf took his strategy and run away!");
+        println!("2: Cannot parse input!");
+    }
+    
+    if let Some(cargo) = Cargo::load_from("data/3.in") {
+        println!("3.1: The individuals score is {:?}", cargo.individuals_score());
+        println!("3.2: The groups score is {:?}", cargo.groups_score());
+    } else {
+        println!("3: Cannot parse input!");
     }
 }
