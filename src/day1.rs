@@ -6,7 +6,7 @@ impl Supply {
     pub fn from(input: &str) -> Option<Self> {
         Some(Self(input.parse().ok()?))
     }
-    
+
     pub fn calories(&self) -> u32 {
         self.0
     }
@@ -24,7 +24,9 @@ pub struct Elf(Vec<Supply>);
 impl Elf {
     pub fn from(input: &str) -> Option<Self> {
         let mut supplies: Vec<Supply> = Vec::new();
-        for s in input.split('\n') { supplies.push(Supply::from(s)?); }
+        for s in input.split('\n') {
+            supplies.push(Supply::from(s)?);
+        }
         Some(Self(supplies))
     }
 
@@ -47,7 +49,9 @@ pub struct Elves(Vec<Elf>);
 impl Elves {
     pub fn from(input: &str) -> Option<Self> {
         let mut elves: Vec<Elf> = Vec::new();
-        for s in input.split("\n\n") { elves.push(Elf::from(s)?); }
+        for s in input.split("\n\n") {
+            elves.push(Elf::from(s)?);
+        }
         elves.sort_by(|a, b| b.calories().cmp(&a.calories()));
         Some(Self(elves))
     }
@@ -58,6 +62,9 @@ impl Elves {
     }
 
     pub fn calories_carried_by_top(&self, count: usize) -> u32 {
-        self.0.iter().take(count).fold(0, |a, elf| a + elf.calories())
+        self.0
+            .iter()
+            .take(count)
+            .fold(0, |a, elf| a + elf.calories())
     }
 }
