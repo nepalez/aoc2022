@@ -1,112 +1,90 @@
 use std::fs;
 
-pub struct Input(pub Vec<(char, char)>);
-impl Input {
-    pub fn load_from(path: &str) -> Option<Input> {
-        let data = fs::read_to_string(path).ok()?;
-
-        let output: Vec<(char, char)> = data
-            .split('\n')
-            .map(|i| {
-                let mut chars = i.chars();
-                let a = chars.next().unwrap();
-                chars.next();
-                let b = chars.next().unwrap();
-                (a, b)
-            })
-            .collect();
-
-        Some(Self(output))
-    }
-}
-
 #[derive(Debug)]
-pub struct Round(u32);
+pub struct Round((char, char));
 impl Round {
-    pub fn misinterpret(input: (char, char)) -> Option<Self> {
-        let mut list = [
-            ('B', 'X'), // PR
-            ('C', 'Y'), // SP
-            ('A', 'Z'), // RS
-            ('A', 'X'), // RR
-            ('B', 'Y'), // PP
-            ('C', 'Z'), // SS
-            ('C', 'X'), // SR
-            ('A', 'Y'), // RP
-            ('B', 'Z'), // PS
-        ]
-        .iter();
-        Some(Round(list.position(|a| a == &input)? as u32 + 1))
+    pub fn from(input: &str) -> Option<Self> {
+        let mut data = input.split(' ');
+        let left = match data.next()? {
+            "A" => Some('A'),
+            "B" => Some('B'),
+            "C" => Some('C'),
+            _ => None,
+        }?;
+        let right = match data.next()? {
+            "X" => Some('X'),
+            "Y" => Some('Y'),
+            "Z" => Some('Z'),
+            _ => None,
+        }?;
+        Some(Self((left, right)))
     }
 
-    pub fn interpret(input: (char, char)) -> Option<Self> {
-        let mut list = [
-            ('B', 'X'), // PR
-            ('C', 'X'), // SP
-            ('A', 'X'), // RS
-            ('A', 'Y'), // RR
-            ('B', 'Y'), // PP
-            ('C', 'Y'), // SS
-            ('C', 'Z'), // SR
-            ('A', 'Z'), // RP
-            ('B', 'Z'), // PS
-        ]
-        .iter();
-        Some(Round(list.position(|a| a == &input)? as u32 + 1))
+    pub fn wrong_score(&self) -> u32 {
+        match self.0 {
+            ('B', 'X') => 1, // PR
+            ('C', 'Y') => 2, // SP
+            ('A', 'Z') => 3, // RS
+            ('A', 'X') => 4, // RR
+            ('B', 'Y') => 5, // PP
+            ('C', 'Z') => 6, // SS
+            ('C', 'X') => 7, // SR
+            ('A', 'Y') => 8, // RP
+            ('B', 'Z') => 9, // PS
+            _ => panic!(),
+        }
+    }
+
+    pub fn right_score(&self) -> u32 {
+        match self.0 {
+            ('B', 'X') => 1, // PR
+            ('C', 'X') => 2, // SP
+            ('A', 'X') => 3, // RS
+            ('A', 'Y') => 4, // RR
+            ('B', 'Y') => 5, // PP
+            ('C', 'Y') => 6, // SS
+            ('C', 'Z') => 7, // SR
+            ('A', 'Z') => 8, // RP
+            ('B', 'Z') => 9, // PS
+            _ => panic!(),
+        }
     }
 }
 
-/// Strategy of the Rock-Scissors-Paper game against an elf
+/// Rock-Scissors-Paper game against an elf
 /// ```
-/// use aoc2022::{Input, Strategy};
+/// use aoc2022::Game;
 ///
-/// let input = Input(Vec::from([
-///   ('A', 'Y'),
-///   ('B', 'X'),
-///   ('C', 'Z'),
-/// ]));
-/// let strategy = Strategy::misinterpret(&input).unwrap();
-/// assert_eq!(strategy.score(), 15);
-///
-/// let input = Input(Vec::from([
-///   ('A', 'Y'),
-///   ('B', 'X'),
-///   ('C', 'Z'),
-/// ]));
-/// let strategy = Strategy::interpret(&input).unwrap();
-/// assert_eq!(strategy.score(), 12);
+/// let game = Game::from("A Y\nB X\nC Z").unwrap();
+/// assert_eq!(game.wrong_score(), 15);
+/// assert_eq!(game.right_score(), 12);
 /// ```
 #[derive(Debug)]
-pub struct Strategy(Vec<Round>);
-impl Strategy {
-    pub fn misinterpret(input: &Input) -> Option<Self> {
-        let mut rounds: Vec<Round> = Vec::with_capacity(input.0.len());
-        for i in input.0.iter().map(|&r| Round::misinterpret(r)) {
-            if let Some(round) = i {
-                rounds.push(round);
-            } else {
-                return None;
-            }
+pub struct Game(Vec<Round>);
+impl Game {
+    pub fn from(input: &str) -> Option<Self> {
+        let data = input.split('\n');
+        let mut game: Vec<Round> = Vec::new();
+        for round in data {
+            game.push(Round::from(round)?)
         }
-        Some(Self(rounds))
+        Some(Self(game))
     }
 
-    pub fn interpret(input: &Input) -> Option<Self> {
-        let mut rounds: Vec<Round> = Vec::with_capacity(input.0.len());
-        for i in input.0.iter().map(|&r| Round::interpret(r)) {
-            if let Some(round) = i {
-                rounds.push(round);
-            } else {
-                return None;
-            }
-        }
-        Some(Self(rounds))
+    pub fn load_from(path: &str) -> Option<Self> {
+        let data = fs::read_to_string(path).ok()?;
+        Self::from(&data)
     }
 
-    pub fn score(&self) -> u32 {
+    pub fn wrong_score(&self) -> u32 {
         self.0
             .iter()
-            .map(|r| r.0)
-            .fold(0, |result, score| result + score)
+            .fold(0, |acc, round| acc + round.wrong_score())
+    }
+
+    pub fn right_score(&self) -> u32 {
+        self.0
+            .iter()
+            .fold(0, |acc, round| acc + round.right_score())
     }
 }

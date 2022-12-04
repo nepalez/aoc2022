@@ -3,13 +3,8 @@ mod day2;
 mod day3;
 mod day4;
 
-use day1::*;
-use day2::*;
-use day3::*;
-use day4::*;
-
 fn main() {
-    if let Some(mut elves) = Elves::load_from("data/1.in") {
+    if let Some(elves) = day1::Elves::load_from("data/1.in") {
         println!(
             "1.1: The strongest elf carries {:?} calories",
             elves.calories_carried_by_top(1)
@@ -22,18 +17,14 @@ fn main() {
         println!("1: Cannot parse the input!");
     }
 
-    if let Some(input) = day2::Input::load_from("data/2.in") {
-        if let Some(strategy) = Strategy::misinterpret(&input) {
-            println!("2.1. Misinterpreted input's score is {}", strategy.score());
-        }
-        if let Some(strategy) = Strategy::interpret(&input) {
-            println!("2.2. A proper input's score is {}", strategy.score());
-        }
+    if let Some(game) = day2::Game::load_from("data/2.in") {
+        println!("2.1. Misinterpreted score is {}", game.wrong_score());
+        println!("2.2. A proper score is {}", game.right_score());
     } else {
         println!("2: Cannot parse the input!");
     }
 
-    if let Some(cargo) = Cargo::load_from("data/3.in") {
+    if let Some(cargo) = day3::Cargo::load_from("data/3.in") {
         println!(
             "3.1: The individuals score is {:?}",
             cargo.individuals_score()
@@ -43,7 +34,7 @@ fn main() {
         println!("3: Cannot parse the input!");
     }
 
-    if let Some(pairs) = Pairs::load_from("data/4.in") {
+    if let Some(pairs) = day4::Pairs::load_from("data/4.in") {
         println!(
             "4.1: The number of pairs where one assigment fully contains the other is {:?}",
             pairs.count_fully_contained()
