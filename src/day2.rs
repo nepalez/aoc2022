@@ -5,13 +5,16 @@ impl Input {
     pub fn load_from(path: &str) -> Option<Input> {
         let data = fs::read_to_string(path).ok()?;
 
-        let output: Vec<(char, char)> = data.split('\n').map(|i| {
-            let mut chars = i.chars();
-            let a = chars.next().unwrap();
-            chars.next();
-            let b = chars.next().unwrap();
-            (a, b)
-        }).collect();
+        let output: Vec<(char, char)> = data
+            .split('\n')
+            .map(|i| {
+                let mut chars = i.chars();
+                let a = chars.next().unwrap();
+                chars.next();
+                let b = chars.next().unwrap();
+                (a, b)
+            })
+            .collect();
 
         Some(Self(output))
     }
@@ -31,10 +34,11 @@ impl Round {
             ('C', 'X'), // SR
             ('A', 'Y'), // RP
             ('B', 'Z'), // PS
-        ].iter();
+        ]
+        .iter();
         Some(Round(list.position(|a| a == &input)? as u32 + 1))
     }
-    
+
     pub fn interpret(input: (char, char)) -> Option<Self> {
         let mut list = [
             ('B', 'X'), // PR
@@ -46,7 +50,8 @@ impl Round {
             ('C', 'Z'), // SR
             ('A', 'Z'), // RP
             ('B', 'Z'), // PS
-        ].iter();
+        ]
+        .iter();
         Some(Round(list.position(|a| a == &input)? as u32 + 1))
     }
 }
@@ -54,7 +59,7 @@ impl Round {
 /// Strategy of the Rock-Scissors-Paper game against an elf
 /// ```
 /// use aoc2022::{Input, Strategy};
-/// 
+///
 /// let input = Input(Vec::from([
 ///   ('A', 'Y'),
 ///   ('B', 'X'),
@@ -99,6 +104,9 @@ impl Strategy {
     }
 
     pub fn score(&self) -> u32 {
-        self.0.iter().map(|r| r.0).fold(0, |result, score| result + score)
+        self.0
+            .iter()
+            .map(|r| r.0)
+            .fold(0, |result, score| result + score)
     }
 }

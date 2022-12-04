@@ -1,7 +1,7 @@
-pub(crate) mod day1;
-pub(crate) mod day2;
-pub(crate) mod day3;
-pub(crate) mod day4;
+mod day1;
+mod day2;
+mod day3;
+mod day4;
 
 pub use day1::*;
 pub use day2::*;

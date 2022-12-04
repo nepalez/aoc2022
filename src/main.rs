@@ -10,8 +10,14 @@ use day4::*;
 
 fn main() {
     if let Some(mut elves) = Elves::load_from("data/1.in") {
-        println!("1.1: The strongest elf carries {:?} calories", elves.maximum_supply());
-        println!("1.2: The strongest 3 elves carry {:?} calories", elves.total_calories_by_top(3));
+        println!(
+            "1.1: The strongest elf carries {:?} calories",
+            elves.maximum_supply()
+        );
+        println!(
+            "1.2: The strongest 3 elves carry {:?} calories",
+            elves.total_calories_by_top(3)
+        );
     } else {
         println!("1: Cannot parse the input!");
     }
@@ -26,14 +32,17 @@ fn main() {
     } else {
         println!("2: Cannot parse the input!");
     }
-    
+
     if let Some(cargo) = Cargo::load_from("data/3.in") {
-        println!("3.1: The individuals score is {:?}", cargo.individuals_score());
+        println!(
+            "3.1: The individuals score is {:?}",
+            cargo.individuals_score()
+        );
         println!("3.2: The groups score is {:?}", cargo.groups_score());
     } else {
         println!("3: Cannot parse the input!");
     }
-    
+
     if let Some(pairs) = Pairs::load_from("data/4.in") {
         println!(
             "4.1: The number of pairs where one assigment fully contains the other is {:?}",

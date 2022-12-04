@@ -28,17 +28,21 @@ pub struct Items(Vec<Item>);
 impl Items {
     pub fn from(input: &str) -> Self {
         let mut output = Vec::with_capacity(input.len());
-        for c in input.chars() { output.push(Item(c)) }
+        for c in input.chars() {
+            output.push(Item(c))
+        }
         Self(output)
     }
-    
+
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
     pub fn uniq_items(&self) -> HashSet<Item> {
         let mut collector: HashSet<Item> = HashSet::with_capacity(self.0.len());
-        for i in self.0.iter() { collector.insert(i.clone()); }
+        for i in self.0.iter() {
+            collector.insert(i.clone());
+        }
         collector
     }
 }
@@ -68,7 +72,7 @@ impl Group {
         }
         None
     }
-    
+
     pub fn score(&self) -> Option<u32> {
         Some(self.badge()?.score())
     }
@@ -77,7 +81,7 @@ impl Group {
 /// The rucksack with left and right compartments
 /// ```
 /// use aoc2022::{Rucksack, Item};
-/// 
+///
 /// let rucksack = Rucksack::from("vJrwpWtwJgWrhcsFMMfFFhFp");
 /// assert_eq!(rucksack.badge(), Some(Item('p')));
 /// assert_eq!(rucksack.score(), Some(16));
@@ -112,10 +116,13 @@ impl Rucksack {
         let size = input.len() / 2;
         let items = Items::from(input);
         let (l, r) = input.split_at(size);
-        let compartments  = Group(Vec::from([Items::from(l), Items::from(r)]));
-        Self { items, compartments }
+        let compartments = Group(Vec::from([Items::from(l), Items::from(r)]));
+        Self {
+            items,
+            compartments,
+        }
     }
-    
+
     pub fn badge(&self) -> Option<Item> {
         self.compartments.badge()
     }
@@ -133,24 +140,26 @@ impl Cargo {
         let cargo: Vec<Rucksack> = data.split('\n').map(|r| Rucksack::from(r)).collect();
         Some(Cargo(cargo))
     }
-    
+
     pub fn individuals_score(&self) -> Option<u32> {
         let scores = self.0.iter().map(|i| i.score());
         let mut score: u32 = 0;
-        for s in scores { score += s?; }
+        for s in scores {
+            score += s?;
+        }
         Some(score)
     }
 
     pub fn groups_score(&self) -> Option<u32> {
-        let scores = self.0
-            .chunks(3)
-            .map(|c| { 
-                let group: Vec<Items> = c.iter().map(|r| r.items.clone()).collect();
-                Group(group).score()
-            });
-        
+        let scores = self.0.chunks(3).map(|c| {
+            let group: Vec<Items> = c.iter().map(|r| r.items.clone()).collect();
+            Group(group).score()
+        });
+
         let mut score: u32 = 0;
-        for s in scores { score += s?; }
+        for s in scores {
+            score += s?;
+        }
         Some(score)
     }
 }

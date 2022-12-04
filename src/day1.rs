@@ -5,7 +5,7 @@ use std::fs;
 /// because a song can lift his the spirit but cannot feed his body.
 pub type Calories = u32;
 
-/// A food supply containing calories to help elves not starve away 
+/// A food supply containing calories to help elves not starve away
 pub struct Supply {
     pub calories: Calories,
 }
@@ -13,7 +13,7 @@ pub struct Supply {
 /// An elf carrying some supplies on his/her narrow back
 /// ```
 /// use aoc2022::Elf;
-/// 
+///
 /// let calories: Vec<u32> = [1000, 2000, 3000].into();
 /// let elf = Elf::new(calories);
 /// assert_eq!(elf.supplied_calories(), 6000 as u32);
@@ -29,7 +29,11 @@ impl Elf {
 
     /// The number of calories supplied by an elf
     pub fn supplied_calories(&self) -> Calories {
-        self.supplies.iter().map(|s| s.calories).reduce(|a, s| a + s).unwrap()
+        self.supplies
+            .iter()
+            .map(|s| s.calories)
+            .reduce(|a, s| a + s)
+            .unwrap()
     }
 }
 
@@ -39,9 +43,10 @@ impl Elves {
     pub fn load_from(path: &str) -> Option<Self> {
         let data = fs::read_to_string(path).ok()?;
 
-        let cargo: Vec<Vec<u32>> = data.split("\n\n").map(|i| {
-            i.split('\n').map(|i| i.parse().unwrap()).collect()
-        }).collect();
+        let cargo: Vec<Vec<u32>> = data
+            .split("\n\n")
+            .map(|i| i.split('\n').map(|i| i.parse().unwrap()).collect())
+            .collect();
 
         Some(Self::new(cargo))
     }
@@ -50,9 +55,10 @@ impl Elves {
         let elves: Vec<Elf> = c.into_iter().map(|c| Elf::new(c)).collect();
         Self(elves)
     }
-    
+
     fn sort_by_supply(&mut self) {
-        self.0.sort_by(|a, b| b.supplied_calories().cmp(&a.supplied_calories()));
+        self.0
+            .sort_by(|a, b| b.supplied_calories().cmp(&a.supplied_calories()));
     }
 
     /// Return total calories carried by the n strongest elves
