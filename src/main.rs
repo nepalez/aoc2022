@@ -12,11 +12,11 @@ fn main() {
     if let Some(mut elves) = Elves::load_from("data/1.in") {
         println!(
             "1.1: The strongest elf carries {:?} calories",
-            elves.maximum_supply()
+            elves.calories_carried_by_top(1)
         );
         println!(
             "1.2: The strongest 3 elves carry {:?} calories",
-            elves.total_calories_by_top(3)
+            elves.calories_carried_by_top(3)
         );
     } else {
         println!("1: Cannot parse the input!");

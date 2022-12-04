@@ -80,7 +80,7 @@ impl Pairs {
 
     pub fn load_from(path: &str) -> Option<Self> {
         let data = fs::read_to_string(path).ok()?;
-        Pairs::from(&data)
+        Self::from(&data)
     }
 
     /// Count inclusive pairs where one assignment fully contains the other

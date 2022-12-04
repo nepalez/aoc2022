@@ -1,105 +1,63 @@
 use std::fs;
 
-/// A number of calories tha provide an energy to an elf.
-/// Not to be confused with other values like the number of songs an elf knows,
-/// because a song can lift his the spirit but cannot feed his body.
-pub type Calories = u32;
-
-/// A food supply containing calories to help elves not starve away
-pub struct Supply {
-    pub calories: Calories,
+#[derive(Debug, PartialOrd, PartialEq)]
+pub struct Supply(u32);
+impl Supply {
+    pub fn from(input: &str) -> Option<Self> {
+        Some(Self(input.parse().ok()?))
+    }
+    
+    pub fn calories(&self) -> u32 {
+        self.0
+    }
 }
 
-/// An elf carrying some supplies on his/her narrow back
+/// An elf carrying some supplies
 /// ```
 /// use aoc2022::Elf;
 ///
-/// let calories: Vec<u32> = [1000, 2000, 3000].into();
-/// let elf = Elf::new(calories);
-/// assert_eq!(elf.supplied_calories(), 6000 as u32);
+/// let elf = Elf::from("1000\n2000\n3000").unwrap();
+/// assert_eq!(elf.calories(), 6000);
 /// ```
-pub struct Elf {
-    supplies: Vec<Supply>,
-}
+#[derive(Debug, PartialOrd, PartialEq)]
+pub struct Elf(Vec<Supply>);
 impl Elf {
-    pub fn new(c: Vec<u32>) -> Self {
-        let supplies: Vec<Supply> = c.into_iter().map(|calories| Supply { calories }).collect();
-        Self { supplies }
+    pub fn from(input: &str) -> Option<Self> {
+        let mut supplies: Vec<Supply> = Vec::new();
+        for s in input.split('\n') { supplies.push(Supply::from(s)?); }
+        Some(Self(supplies))
     }
 
-    /// The number of calories supplied by an elf
-    pub fn supplied_calories(&self) -> Calories {
-        self.supplies
-            .iter()
-            .map(|s| s.calories)
-            .reduce(|a, s| a + s)
-            .unwrap()
+    pub fn calories(&self) -> u32 {
+        self.0.iter().fold(0, |a, supply| a + supply.calories())
     }
 }
 
-/// The band of elves looking for start fruits
+/// A group of elves
+/// ```
+/// use aoc2022::Elves;
+///
+/// let elves = Elves::from("1\n2\n3\n\n4\n\n5\n6\n\n7\n8\n9\n\n10").unwrap();
+/// println!("{:?}", elves);
+/// assert_eq!(elves.calories_carried_by_top(1), 24);
+/// assert_eq!(elves.calories_carried_by_top(3), 45);
+/// ```
+#[derive(Debug)]
 pub struct Elves(Vec<Elf>);
 impl Elves {
+    pub fn from(input: &str) -> Option<Self> {
+        let mut elves: Vec<Elf> = Vec::new();
+        for s in input.split("\n\n") { elves.push(Elf::from(s)?); }
+        elves.sort_by(|a, b| b.calories().cmp(&a.calories()));
+        Some(Self(elves))
+    }
+
     pub fn load_from(path: &str) -> Option<Self> {
         let data = fs::read_to_string(path).ok()?;
-
-        let cargo: Vec<Vec<u32>> = data
-            .split("\n\n")
-            .map(|i| i.split('\n').map(|i| i.parse().unwrap()).collect())
-            .collect();
-
-        Some(Self::new(cargo))
+        Self::from(&data)
     }
 
-    pub fn new(c: Vec<Vec<u32>>) -> Self {
-        let elves: Vec<Elf> = c.into_iter().map(|c| Elf::new(c)).collect();
-        Self(elves)
-    }
-
-    fn sort_by_supply(&mut self) {
-        self.0
-            .sort_by(|a, b| b.supplied_calories().cmp(&a.supplied_calories()));
-    }
-
-    /// Return total calories carried by the n strongest elves
-    /// ```
-    /// use aoc2022::Elves;
-    ///
-    /// let cargo = Vec::from([
-    ///   Vec::from([1000, 2000, 3000]),
-    ///   Vec::from([4000]),
-    ///   Vec::from([5000, 6000]),
-    ///   Vec::from([7000, 8000, 9000]),
-    ///   Vec::from([10000]),
-    /// ]);
-    /// let mut elves = Elves::new(cargo);
-    /// assert_eq!(elves.total_calories_by_top(3), 45000 as u32);
-    /// ```
-    pub fn total_calories_by_top(&mut self, number: usize) -> Calories {
-        self.sort_by_supply();
-        self.0
-            .iter()
-            .take(number)
-            .map(|e| e.supplied_calories())
-            .reduce(|a, c| a + c)
-            .unwrap()
-    }
-
-    /// Return calories supplied by the strongest elf
-    /// ```
-    /// use aoc2022::Elves;
-    ///
-    /// let cargo = Vec::from([
-    ///   Vec::from([1000, 2000, 3000]),
-    ///   Vec::from([4000]),
-    ///   Vec::from([5000, 6000]),
-    ///   Vec::from([7000, 8000, 9000]),
-    ///   Vec::from([10000]),
-    /// ]);
-    /// let mut elves = Elves::new(cargo);
-    /// assert_eq!(elves.maximum_supply(), 24000 as u32);
-    /// ```
-    pub fn maximum_supply(&mut self) -> Calories {
-        self.total_calories_by_top(1)
+    pub fn calories_carried_by_top(&self, count: usize) -> u32 {
+        self.0.iter().take(count).fold(0, |a, elf| a + elf.calories())
     }
 }
