@@ -53,14 +53,14 @@ impl Round {
 
 /// Strategy of the Rock-Scissors-Paper game against an elf
 /// ```
-/// use aoc2022::Strategy;
+/// use aoc2022::{Input, Strategy};
 /// 
 /// let input = Input(Vec::from([
 ///   ('A', 'Y'),
 ///   ('B', 'X'),
 ///   ('C', 'Z'),
 /// ]));
-/// let strategy = Strategy::misinterpret(input).unwrap();
+/// let strategy = Strategy::misinterpret(&input).unwrap();
 /// assert_eq!(strategy.score(), 15);
 ///
 /// let input = Input(Vec::from([
@@ -68,7 +68,7 @@ impl Round {
 ///   ('B', 'X'),
 ///   ('C', 'Z'),
 /// ]));
-/// let strategy = Strategy::interpret(input).unwrap();
+/// let strategy = Strategy::interpret(&input).unwrap();
 /// assert_eq!(strategy.score(), 12);
 /// ```
 #[derive(Debug)]
