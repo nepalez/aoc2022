@@ -2,6 +2,7 @@ mod day1;
 mod day2;
 mod day3;
 mod day4;
+mod day5;
 
 fn main() {
     if let Some(elves) = day1::Elves::load_from("data/1.in") {
@@ -45,5 +46,12 @@ fn main() {
         );
     } else {
         println!("4: Cannot parse the input!");
+    }
+
+    if let Some(crane) = day5::Crane::load_from("data/5.in") {
+        println!("5.1: Unmodified crane ended with {:?}", crane.apply_old());
+        println!("5.2: Modified crane ended with {:?}", crane.apply_new());
+    } else {
+        println!("5: Cannot parse the input!");
     }
 }
