@@ -24,12 +24,6 @@ impl Stack {
     }
 }
 
-/// ```
-/// use aoc2022::Content;
-///
-/// let content = Content::from("    [D]    \n[N] [C]    \n[Z] [M] [P]\n 1   2   3 ").unwrap();
-/// assert_eq!(content.top().unwrap(), "NDP");
-/// ```
 #[derive(Debug, Clone)]
 pub struct Content {
     stacks: HashMap<char, Stack>,
@@ -118,14 +112,6 @@ impl Command {
         Some(output)
     }
 
-    /// ```
-    /// use aoc2022::{Content, Command};
-    ///
-    /// let mut content = Content::from("    [D]    \n[N] [C]    \n[Z] [M] [P]\n 1   2   3 ").unwrap();
-    /// let command = Command::from("move 2 from 2 to 1").unwrap();
-    /// command.apply_old(&mut content);
-    /// assert_eq!(content.top().unwrap(), "CMP");
-    /// ```
     pub fn apply_old(&self, content: &mut Content) -> Option<()> {
         for _ in 0..self.0 {
             let item = { content.pop(self.1)? };
@@ -134,14 +120,6 @@ impl Command {
         Some(())
     }
 
-    /// ```
-    /// use aoc2022::{Content, Command};
-    ///
-    /// let mut content = Content::from("    [D]    \n[N] [C]    \n[Z] [M] [P]\n 1   2   3 ").unwrap();
-    /// let command = Command::from("move 2 from 2 to 1").unwrap();
-    /// command.apply_new(&mut content);
-    /// assert_eq!(content.top().unwrap(), "DMP");
-    /// ```
     pub fn apply_new(&self, content: &mut Content) -> Option<()> {
         let mut buffer: Vec<char> = Vec::new();
         for _ in 0..self.0 {

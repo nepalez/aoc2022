@@ -3,6 +3,7 @@ mod day2;
 mod day3;
 mod day4;
 mod day5;
+mod day6;
 
 fn main() {
     if let Some(elves) = day1::Elves::load_from("data/1.in") {
@@ -53,5 +54,12 @@ fn main() {
         println!("5.2: Modified crane ended with {:?}", crane.apply_new());
     } else {
         println!("5: Cannot parse the input!");
+    }
+
+    if let Some(stream) = day6::Stream::load_from("data/6.in") {
+        println!("6.1: Packet starts at {:?}", stream.start_packet());
+        println!("6.2: Message starts at {:?}", stream.start_message());
+    } else {
+        println!("6: Cannot parse the input!");
     }
 }
