@@ -1,13 +1,13 @@
 use std::borrow::BorrowMut;
 use std::collections::{HashSet, VecDeque};
 use std::fs;
+use std::str::Chars;
 
 #[derive(Debug)]
 pub struct Buffer(VecDeque<char>);
 impl Buffer {
-    pub fn from(input: &str, size: usize) -> Option<Self> {
+    pub fn from(input: &mut Chars, size: usize) -> Option<Self> {
         let mut vd = VecDeque::new();
-        let mut input = input.chars();
         for _ in 0..size {
             vd.push_back(input.next()?)
         }
@@ -67,10 +67,11 @@ impl Stream {
     }
 
     fn find_uniq_seq(&self, size: usize) -> Option<usize> {
-        let mut buffer = Buffer::from(&self.0, size)?;
-        for (index, c) in self.0.chars().enumerate() {
+        let mut chars = self.0.chars();
+        let mut buffer = Buffer::from(&mut chars, size)?;
+        for (index, c) in chars.enumerate() {
             if buffer.is_uniq() {
-                return Some(index);
+                return Some(index + size);
             }
             buffer.borrow_mut().forward(c);
         }
