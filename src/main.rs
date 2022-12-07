@@ -4,6 +4,7 @@ mod day3;
 mod day4;
 mod day5;
 mod day6;
+mod day7;
 
 fn main() {
     if let Some(elves) = day1::Elves::load_from("data/1.in") {
@@ -61,5 +62,20 @@ fn main() {
         println!("6.2: Message starts at {:?}", stream.start_message());
     } else {
         println!("6: Cannot parse the input!");
+    }
+
+    if let Some(tree) = day7::Tree::load_from("data/7.in") {
+        let sizes = tree.folder_sizes();
+        let answer = sizes
+            .iter()
+            .filter(|&&i| i <= 100000)
+            .fold(0, |a, &i| a + i);
+        println!("7.1: Sum of folder sizes is {:?}", answer);
+
+        let extra_space = tree.size() - 40000000;
+        let answer = sizes.iter().find(|&&a| a >= extra_space);
+        println!("7.2: Space to drop: {:?}", answer);
+    } else {
+        println!("7: Cannot parse the input!");
     }
 }
