@@ -75,12 +75,12 @@ fn main() {
         println!("7: Cannot parse the input!");
     }
 
-    if let Some(grid) = day8::Grid::load_from("data/8.in") {
+    if let Some(forest) = day8::Forest::load_from("data/8.in") {
         println!(
-            "8.1: Total number of visible trees is {}",
-            grid.count_visible()
+            "8.1: The number of visible trees is {}",
+            forest.count_visible()
         );
-        println!("8.2: Best tree's score is {}", grid.best_score());
+        println!("8.2: The best tree's score is {}", forest.best_score());
     } else {
         println!("8: Cannot parse the input!");
     }
