@@ -13,6 +13,21 @@ pub struct Node {
 #[derive(Debug)]
 pub struct Tree(Rc<RefCell<Node>>);
 impl Tree {
+    pub fn space_to_drop(&self, space_to_get: i32) -> Option<i32> {
+        let extra_space = self.size() - space_to_get;
+        self.folder_sizes()
+            .iter()
+            .find(|&&a| a >= extra_space)
+            .map(|&i| i)
+    }
+
+    pub fn sum_of_folders_up_to(&self, limit: i32) -> i32 {
+        self.folder_sizes()
+            .iter()
+            .filter(|&&i| i <= limit)
+            .fold(0, |a, &i| a + i)
+    }
+
     // build a file tree from given input file
     pub fn load_from(path: &str) -> Option<Self> {
         let data = fs::read_to_string(path).ok()?;

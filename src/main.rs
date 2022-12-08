@@ -5,6 +5,7 @@ mod day4;
 mod day5;
 mod day6;
 mod day7;
+mod day8;
 
 fn main() {
     if let Some(elves) = day1::Elves::load_from("data/1.in") {
@@ -65,17 +66,22 @@ fn main() {
     }
 
     if let Some(tree) = day7::Tree::load_from("data/7.in") {
-        let sizes = tree.folder_sizes();
-        let answer = sizes
-            .iter()
-            .filter(|&&i| i <= 100000)
-            .fold(0, |a, &i| a + i);
-        println!("7.1: Sum of folder sizes is {:?}", answer);
-
-        let extra_space = tree.size() - 40000000;
-        let answer = sizes.iter().find(|&&a| a >= extra_space);
-        println!("7.2: Space to drop: {:?}", answer);
+        println!(
+            "7.1: Sum of folder sizes is {:?}",
+            tree.sum_of_folders_up_to(100000)
+        );
+        println!("7.2: Space to drop: {:?}", tree.space_to_drop(40000000));
     } else {
         println!("7: Cannot parse the input!");
+    }
+
+    if let Some(grid) = day8::Grid::load_from("data/8.in") {
+        println!(
+            "8.1: Total number of visible trees is {}",
+            grid.count_visible()
+        );
+        println!("8.2: Best tree's score is {}", grid.best_score());
+    } else {
+        println!("8: Cannot parse the input!");
     }
 }
