@@ -2,8 +2,36 @@ use std::borrow::BorrowMut;
 use std::collections::HashSet;
 use std::fs;
 
+#[derive(Debug)]
+enum Direction {
+    LEFT,
+    RIGHT,
+    UP,
+    DOWN,
+}
+
+#[derive(Debug)]
+struct Motion {
+    direction: Direction,
+    steps: usize,
+}
+impl Motion {
+    pub fn from(input: &str) -> Option<Self> {
+        let mut data = input.split(' ');
+        let direction = match data.next()? {
+            "U" => Direction::UP,
+            "D" => Direction::DOWN,
+            "L" => Direction::LEFT,
+            "R" => Direction::RIGHT,
+            _ => return None,
+        };
+        let steps = data.next()?.parse::<u32>().ok()? as usize;
+        Some(Self { direction, steps })
+    }
+}
+
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
-pub struct Knot {
+struct Knot {
     pub x: i32,
     pub y: i32,
 }
@@ -35,17 +63,16 @@ impl Knot {
 }
 
 #[derive(Clone, Debug)]
-pub struct Rope {
+struct Rope {
     pub knots: Vec<Knot>,
     size: usize,
 }
 impl Rope {
     pub fn new(size: usize) -> Option<Self> {
         if size > 0 {
-            let knot = Knot::default();
             let mut knots = Vec::with_capacity(size);
             for _ in 0..size {
-                knots.push(knot.clone())
+                knots.push(Knot::default())
             }
             Some(Self { knots, size })
         } else {
@@ -53,14 +80,10 @@ impl Rope {
         }
     }
 
-    pub fn motion(&mut self, input: &str, positions: &mut Positions) -> Option<()> {
-        let mut data = input.split(' ');
-        let direction = data.next()?;
-        let steps: u32 = data.next()?.parse().ok()?;
-        for _ in 0..steps {
-            self.shift(direction, positions)?;
+    pub fn apply(&mut self, motion: &Motion, positions: &mut Positions) {
+        for _ in 0..motion.steps {
+            self.step(&motion.direction, positions);
         }
-        Some(())
     }
 
     fn tail(&mut self) -> &mut Knot {
@@ -71,13 +94,12 @@ impl Rope {
         &mut self.knots[0]
     }
 
-    fn shift(&mut self, direction: &str, positions: &mut Positions) -> Option<()> {
+    fn step(&mut self, direction: &Direction, positions: &mut Positions) {
         match direction {
-            "U" => self.head().y += 1,
-            "D" => self.head().y -= 1,
-            "R" => self.head().x += 1,
-            "L" => self.head().x -= 1,
-            _ => return None,
+            Direction::UP => self.head().y += 1,
+            Direction::DOWN => self.head().y -= 1,
+            Direction::RIGHT => self.head().x += 1,
+            Direction::LEFT => self.head().x -= 1,
         }
         let mut head = self.head().clone();
         for i in 1..(self.size - 1) {
@@ -86,13 +108,11 @@ impl Rope {
             head = knot.clone();
         }
         self.tail().follow_tail(head, positions);
-        Some(())
     }
 }
 
-/// Collection of all ropes and knots visited
 #[derive(Debug, Default)]
-pub struct Positions(HashSet<Knot>);
+struct Positions(HashSet<Knot>);
 impl Positions {
     pub fn new() -> Self {
         Self(HashSet::from([Knot::default()]))
@@ -110,18 +130,16 @@ impl Positions {
 /// Move the rope
 /// ```
 /// use std::collections::HashSet;
-/// use aoc2022::{Motions, Rope, Knot};
+/// use aoc2022::Motions;
 ///
 /// let motions = Motions::from("R 4\nU 4\nL 3\nD 1\nR 4\nD 1\nL 5\nR 2").unwrap();
-/// let tail_positions = motions.tail_positions(2).unwrap();
-/// assert_eq!(tail_positions.count(), 13);
+/// assert_eq!(motions.count_tail_positions(2), Some(13));
 ///
 /// let motions = Motions::from("R 5\nU 8\nL 8\nD 3\nR 17\nD 10\nL 25\nU 20").unwrap();
-/// let tail_positions = motions.tail_positions(10).unwrap();
-/// assert_eq!(tail_positions.count(), 36);
+/// assert_eq!(motions.count_tail_positions(10), Some(36));
 /// ```
 #[derive(Debug, Default)]
-pub struct Motions(Vec<String>);
+pub struct Motions(Vec<Motion>);
 impl Motions {
     pub fn load_from(path: &str) -> Option<Self> {
         let data = fs::read_to_string(path).ok()?;
@@ -130,20 +148,20 @@ impl Motions {
 
     pub fn from(input: &str) -> Option<Self> {
         let mut motions = Vec::new();
-        for motion in input.split('\n') {
-            motions.push(motion.into());
+        for line in input.split('\n') {
+            motions.push(Motion::from(line)?);
         }
         Some(Self(motions))
     }
 
-    pub fn tail_positions(&self, size: usize) -> Option<Positions> {
+    pub fn count_tail_positions(&self, size: usize) -> Option<usize> {
         let mut positions = Positions::new();
 
         let mut rope = Rope::new(size)?;
         for motion in self.0.iter() {
-            rope.motion(motion, &mut positions)?;
+            rope.apply(motion, &mut positions);
         }
 
-        Some(positions)
+        Some(positions.count())
     }
 }

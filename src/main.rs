@@ -88,14 +88,14 @@ fn main() {
 
     if let Some(motions) = day9::Motions::load_from("data/9.in") {
         println!(
-            "9.1: The tail of 2-knot-rope visits {} positions",
-            motions.tail_positions(2).unwrap().count()
+            "9.1: The tail of 2-knot-rope visits {:?} positions",
+            motions.count_tail_positions(2)
         );
         println!(
-            "9.2: The tail of 10-knot-rope visits {} positions",
-            motions.tail_positions(10).unwrap().count()
+            "9.2: The tail of 10-knot-rope visits {:?} positions",
+            motions.count_tail_positions(10)
         );
     } else {
-        println!("8: Cannot parse the input!");
+        println!("9: Cannot parse the input!");
     }
 }
