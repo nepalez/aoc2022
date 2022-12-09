@@ -147,7 +147,8 @@ impl Motions {
     }
 
     pub fn from(input: &str) -> Option<Self> {
-        let mut motions = Vec::new();
+        let size = input.chars().filter(|c| c == &'\n').count();
+        let mut motions = Vec::with_capacity(size + 1);
         for line in input.split('\n') {
             motions.push(Motion::from(line)?);
         }
