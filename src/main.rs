@@ -6,6 +6,7 @@ mod day5;
 mod day6;
 mod day7;
 mod day8;
+mod day9;
 
 fn main() {
     if let Some(elves) = day1::Elves::load_from("data/1.in") {
@@ -81,6 +82,19 @@ fn main() {
             forest.count_visible()
         );
         println!("8.2: The best tree's score is {}", forest.best_score());
+    } else {
+        println!("8: Cannot parse the input!");
+    }
+
+    if let Some(motions) = day9::Motions::load_from("data/9.in") {
+        println!(
+            "9.1: The tail of 2-knot-rope visits {} positions",
+            motions.tail_positions(2).unwrap().count()
+        );
+        println!(
+            "9.2: The tail of 10-knot-rope visits {} positions",
+            motions.tail_positions(10).unwrap().count()
+        );
     } else {
         println!("8: Cannot parse the input!");
     }
