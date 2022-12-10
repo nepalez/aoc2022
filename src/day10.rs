@@ -38,10 +38,12 @@ impl Device {
     }
 
     pub fn from(input: &str) -> Option<Self> {
-        let mut size = input.chars().filter(|c| c == &'\n').count() * 2 + 3;
+        // allocate for the initial state and 2 states for every line
+        // because every instruction can take up to 2 cycles
+        let mut size = 3 + input.chars().filter(|&c| c == '\n').count() * 2;
         let mut states = Vec::with_capacity(size);
 
-        states.push(1);
+        states.push(1); // initial
         for line in input.split('\n') {
             Instruction::from(line)?.run(&mut states);
         }
@@ -51,16 +53,15 @@ impl Device {
     }
 
     pub fn sum_of_signals(&self) -> Option<i32> {
-        let steps = vec![20, 60, 100, 140, 180, 220].into_iter();
         let mut result = 0;
-        for step in steps {
+        for step in (20..=220).step_by(40) {
             result += step as i32 * self.states.get(step - 1)?;
         }
         Some(result)
     }
 
     pub fn screen(&self) -> String {
-        let mut output = String::with_capacity(self.size * 41 / 40);
+        let mut output = String::with_capacity(self.size * 41 / 40 - 1);
         for (line, chunk) in self.states.chunks(40).enumerate() {
             if chunk.len() < 40 {
                 break; // only full lines are visible
