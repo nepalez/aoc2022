@@ -1,4 +1,5 @@
 mod day1;
+mod day10;
 mod day2;
 mod day3;
 mod day4;
@@ -97,5 +98,15 @@ fn main() {
         );
     } else {
         println!("9: Cannot parse the input!");
+    }
+
+    if let Some(device) = day10::Device::load_from("data/10.in") {
+        println!(
+            "10.1 The signal's strength is {:?}",
+            device.sum_of_signals()
+        );
+        println!("10.2 The screen is:\n\n{}\n\n", device.screen());
+    } else {
+        println!("10: Cannot parse the input!");
     }
 }
