@@ -1,12 +1,5 @@
 use std::fs;
 
-/// ```
-/// use aoc2022::Device;
-///
-/// let device = Device::load_from("data/10_test.in").unwrap();
-/// assert_eq!(device.sum_of_signals(), Some(13140));
-/// assert_eq!(device.screen(), "##  ##  ##  ##  ##  ##  ##  ##  ##  ##  \n###   ###   ###   ###   ###   ###   ### \n####    ####    ####    ####    ####    \n#####     #####     #####     #####     \n######      ######      ######      ####\n#######       #######       #######     ");
-/// ```
 #[derive(Debug, Eq, PartialEq)]
 enum Instruction {
     Noop,
@@ -35,36 +28,40 @@ impl Instruction {
 }
 
 #[derive(Debug, Default)]
-pub struct Device(Vec<i32>);
+pub struct Device {
+    states: Vec<i32>,
+    size: usize,
+}
 impl Device {
     pub fn load_from(path: &str) -> Option<Self> {
-        let input = fs::read_to_string(path).ok()?;
-        Self::from(&input)
+        Self::from(&fs::read_to_string(path).ok()?)
     }
 
     pub fn from(input: &str) -> Option<Self> {
-        let size = input.chars().filter(|c| c == &'\n').count() + 1;
-        let mut states = Vec::with_capacity(size * 2);
+        let mut size = input.chars().filter(|c| c == &'\n').count() * 2 + 3;
+        let mut states = Vec::with_capacity(size);
+
         states.push(1);
         for line in input.split('\n') {
             Instruction::from(line)?.run(&mut states);
         }
-        Some(Self(states))
+        size = states.len();
+
+        Some(Self { states, size })
     }
 
     pub fn sum_of_signals(&self) -> Option<i32> {
         let steps = vec![20, 60, 100, 140, 180, 220].into_iter();
         let mut result = 0;
         for step in steps {
-            result += step as i32 * self.0.get(step - 1)?;
+            result += step as i32 * self.states.get(step - 1)?;
         }
         Some(result)
     }
 
     pub fn screen(&self) -> String {
-        let size = self.0.len() * 41 / 40; // add extra size for newline symbols
-        let mut output = String::with_capacity(size);
-        for (line, chunk) in self.0.chunks(40).enumerate() {
+        let mut output = String::with_capacity(self.size * 41 / 40);
+        for (line, chunk) in self.states.chunks(40).enumerate() {
             if chunk.len() < 40 {
                 break; // only full lines are visible
             }
@@ -77,5 +74,25 @@ impl Device {
             }
         }
         output
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sum_of_signals_works() {
+        let device = Device::load_from("data/10_test.in").unwrap();
+        assert_eq!(device.sum_of_signals(), Some(13140));
+    }
+
+    #[test]
+    fn screen_works() {
+        let device = Device::load_from("data/10_test.in").unwrap();
+        let expected = fs::read_to_string("data/10_test.out").unwrap();
+        let actual = device.screen();
+        println!("EXPECTED:\n{}\n\nACTUAL:\n{}", expected, actual);
+        assert_eq!(expected, actual);
     }
 }
