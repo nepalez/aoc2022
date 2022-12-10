@@ -22,10 +22,20 @@ impl Instruction {
             None
         }
     }
+
+    pub fn run(&self, states: &mut Vec<i32>) {
+        let state = states.last().unwrap_or(&1).clone();
+        if let Self::Addx(value) = self {
+            states.push(state.clone());
+            states.push(state + value);
+        } else {
+            states.push(state);
+        }
+    }
 }
 
 #[derive(Debug, Default)]
-pub struct Device(Vec<Instruction>);
+pub struct Device(Vec<i32>);
 impl Device {
     pub fn load_from(path: &str) -> Option<Self> {
         let input = fs::read_to_string(path).ok()?;
@@ -34,44 +44,29 @@ impl Device {
 
     pub fn from(input: &str) -> Option<Self> {
         let size = input.chars().filter(|c| c == &'\n').count() + 1;
-        let mut device: Vec<Instruction> = Vec::with_capacity(size);
+        let mut states = Vec::with_capacity(size * 2);
+        states.push(1);
         for line in input.split('\n') {
-            device.push(Instruction::from(line)?);
+            Instruction::from(line)?.run(&mut states);
         }
-        Some(Self(device))
+        Some(Self(states))
     }
 
     pub fn sum_of_signals(&self) -> Option<i32> {
         let steps = vec![20, 60, 100, 140, 180, 220].into_iter();
-        let states = self.run();
         let mut result = 0;
         for step in steps {
-            result += step as i32 * states.get(step - 1)?;
+            result += step as i32 * self.0.get(step - 1)?;
         }
         Some(result)
     }
 
-    fn run(&self) -> Vec<i32> {
-        let mut states = Vec::with_capacity(1 + self.0.len());
-        let mut state = 1;
-        for i in self.0.iter() {
-            states.push(state);
-            if let Instruction::Addx(value) = i {
-                states.push(state);
-                state += value;
-            }
-        }
-        states.push(state);
-        states
-    }
-
     pub fn screen(&self) -> String {
-        let steps = self.run();
-        let size = steps.len() * 41 / 40; // add extra size for newline symbols
+        let size = self.0.len() * 41 / 40; // add extra size for newline symbols
         let mut output = String::with_capacity(size);
-        for (line, chunk) in steps.chunks(40).enumerate() {
+        for (line, chunk) in self.0.chunks(40).enumerate() {
             if chunk.len() < 40 {
-                break;
+                break; // only full lines are visible
             }
             if line > 0 {
                 output.push('\n');
