@@ -1,4 +1,4 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 use std::fs;
 use std::slice::Iter;
 
@@ -127,7 +127,7 @@ impl Level {
 }
 
 #[derive(Debug, Default)]
-pub(crate) struct Levels(VecDeque<Level>);
+pub(crate) struct Levels(Vec<Level>);
 impl Levels {
     pub fn from(dividers: &Dividers, input: &str) -> Option<Self> {
         if input.len() < 19 || &input[0..18] != "  Starting items: " {
@@ -144,11 +144,11 @@ impl Levels {
     }
 
     pub fn push(&mut self, level: Level) {
-        self.0.push_back(level);
+        self.0.push(level);
     }
 
     pub fn pop(&mut self) -> Option<Level> {
-        self.0.pop_front()
+        self.0.pop()
     }
 }
 

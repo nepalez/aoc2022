@@ -106,7 +106,7 @@ fn main() {
             "10.1 The signal's strength is {:?}",
             device.sum_of_signals()
         );
-        println!("10.2 The screen is:\n\n{}\n\n", device.screen());
+        println!("10.2 The screen is:\n\n{}\n", device.screen());
     } else {
         println!("10: Cannot parse the input!");
     }
