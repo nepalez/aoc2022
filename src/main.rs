@@ -1,5 +1,6 @@
 mod day1;
 mod day10;
+mod day11;
 mod day2;
 mod day3;
 mod day4;
@@ -108,5 +109,12 @@ fn main() {
         println!("10.2 The screen is:\n\n{}\n\n", device.screen());
     } else {
         println!("10: Cannot parse the input!");
+    }
+
+    if let Some(mut monkeys) = day11::Monkeys::load_from("data/11.in") {
+        println!(
+            "11.2 The monkey business after 10000 rounds is {:?}",
+            monkeys.monkey_business(10000)
+        );
     }
 }
