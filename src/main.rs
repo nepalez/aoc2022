@@ -1,6 +1,7 @@
 mod day1;
 mod day10;
 mod day11;
+mod day12;
 mod day2;
 mod day3;
 mod day4;
@@ -116,5 +117,14 @@ fn main() {
             "11.2 The monkey business after 10000 rounds is {:?}",
             monkeys.monkey_business(10000)
         );
+    } else {
+        println!("11: Cannot parse the input!");
+    }
+
+    if let Some(grid) = day12::Grid::load_from("data/12.in") {
+        println!("12.1 My distance: {:?}", grid.my_distance());
+        println!("12.2 Min distance: {:?}", grid.min_distance());
+    } else {
+        println!("12: Cannot parse the input!");
     }
 }
