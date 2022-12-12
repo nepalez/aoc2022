@@ -4,7 +4,7 @@ use std::str::FromStr;
 use std::vec::IntoIter;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub struct Position(usize, usize);
+struct Position(usize, usize);
 impl Position {
     pub fn neighbours(&self) -> IntoIter<Position> {
         let mut output: Vec<Self> = Vec::with_capacity(4);
@@ -21,7 +21,7 @@ impl Position {
 }
 
 #[derive(Debug, Default, Clone, Copy)]
-pub struct Node {
+struct Node {
     height: usize,
     distance: Option<usize>,
     visited: bool,
@@ -128,7 +128,7 @@ impl Grid {
     }
 
     // count distance starting from given position
-    pub fn count_distances(&mut self) {
+    fn count_distances(&mut self) {
         self.push_to_queue(self.finish.unwrap(), 0);
         while let Some(_) = self.visit_next() {}
     }
@@ -195,7 +195,7 @@ mod test {
 
     #[test]
     fn test_grid() {
-        let mut grid = Grid::load_from("data/12_test.in").unwrap();
+        let grid = Grid::load_from("data/12_test.in").unwrap();
         assert_eq!(grid.my_distance(), Some(31));
         assert_eq!(grid.min_distance(), Some(29));
     }
