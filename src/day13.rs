@@ -1,10 +1,5 @@
 use serde::Deserialize;
-use std::{
-    cmp::Ordering,
-    fs,
-    str::FromStr,
-    vec::IntoIter,
-};
+use std::{cmp::Ordering, fs, str::FromStr, vec::IntoIter};
 
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(untagged)]
@@ -28,7 +23,9 @@ impl FromStr for Package {
 
 impl From<Vec<u32>> for Package {
     fn from(input: Vec<u32>) -> Self {
-        Self::Array(Box::new(input.iter().map(|&number| Self::Number(number)).collect()))
+        Self::Array(Box::new(
+            input.iter().map(|&number| Self::Number(number)).collect(),
+        ))
     }
 }
 
@@ -149,15 +146,20 @@ impl Signal {
     }
 
     pub fn decoder_key(self) -> Option<usize> {
-        let packages = self.into();
-
-        let signal = Package::from_str("[[2]]").ok()?;
-        let first = 1 + packages.iter().position(|s| s == &signal)?;
-
-        let signal = Package::from_str("[[6]]").ok()?;
-        let second = 1 + packages.iter().position(|s| s == &signal)?;
-
-        Some(first * second)
+        let signals = (
+            Package::from_str("[[2]]").ok()?,
+            Package::from_str("[[6]]").ok()?,
+        );
+        let mut key = 0;
+        let packages: Vec<Package> = self.into();
+        for (index, package) in packages.iter().enumerate() {
+            if key == 0 && package == &signals.0 {
+                key = index + 1
+            } else if package == &signals.1 {
+                return Some((index + 1) * key);
+            }
+        }
+        None
     }
 }
 
