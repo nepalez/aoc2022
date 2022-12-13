@@ -2,6 +2,7 @@ mod day1;
 mod day10;
 mod day11;
 mod day12;
+mod day13;
 mod day2;
 mod day3;
 mod day4;
@@ -126,5 +127,15 @@ fn main() {
         println!("12.2 Min distance: {:?}", grid.min_distance());
     } else {
         println!("12: Cannot parse the input!");
+    }
+
+    if let Some(signal) = day13::Signal::load_from("data/13.in") {
+        println!(
+            "13.1 Number of proper packets: {:?}",
+            signal.sum_right_indexes()
+        );
+        println!("13.2 Decoder key: {:?}", signal.decoder_key());
+    } else {
+        println!("13: Cannot parse the input!");
     }
 }
