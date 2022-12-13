@@ -26,15 +26,21 @@ impl FromStr for Package {
     }
 }
 
+impl From<Vec<u32>> for Package {
+    fn from(input: Vec<u32>) -> Self {
+        Self::Array(Box::new(input.iter().map(|&number| Self::Number(number)).collect()))
+    }
+}
+
 impl PartialOrd<Self> for Package {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {
             (&Package::Number(left), &Package::Number(right)) => left.partial_cmp(&right),
             (&Package::Number(left), &Package::Array(ref _right)) => {
-                Self::wrap(left).partial_cmp(other)
+                Self::from(vec![left]).partial_cmp(other)
             }
             (&Package::Array(ref _left), &Package::Number(right)) => {
-                self.partial_cmp(&Self::wrap(right))
+                self.partial_cmp(&Self::from(vec![right]))
             }
             (&Package::Array(ref left), &Package::Array(ref right)) => {
                 let mut left = left.iter();
@@ -54,12 +60,6 @@ impl PartialOrd<Self> for Package {
                 }
             }
         }
-    }
-}
-
-impl Package {
-    pub fn wrap(number: u32) -> Self {
-        Self::Array(Box::new(vec![Self::Number(number)]))
     }
 }
 
