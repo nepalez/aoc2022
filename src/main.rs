@@ -3,6 +3,7 @@ mod day10;
 mod day11;
 mod day12;
 mod day13;
+mod day14;
 mod day2;
 mod day3;
 mod day4;
@@ -137,5 +138,12 @@ fn main() {
         println!("13.2 Decoder key: {:?}", signal.decoder_key());
     } else {
         println!("13: Cannot parse the input!");
+    }
+    
+    if let Some(mut cave) = day14::Cave::load_from("data/14.in") {
+        cave.pour_sand();
+        println!("14.2 Sand units number: {:?}", cave.count_sand_units());
+    } else {
+        println!("14: Cannot parse the input!");
     }
 }
