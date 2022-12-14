@@ -63,8 +63,8 @@ impl Elves {
 
 fn main() {
     let mut elves = Elves::load_from("data/input.txt").unwrap();
-    let calories = elves.top_calories(1);
-    println!("The strongest elf carries {} calories", calories);
+    let calories = elves.top_calories(3);
+    println!("The strongest 3 elves carry {} calories", calories);
 }
 
 #[cfg(test)]
@@ -74,7 +74,7 @@ mod test {
     #[test]
     fn result() {
         let mut elves = Elves::load_from("data/test.txt").unwrap();
-        let calories = elves.top_calories(1);
-        assert_eq!(calories, 24000);
+        let calories = elves.top_calories(3);
+        assert_eq!(calories, 45000);
     }
 }
