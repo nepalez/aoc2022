@@ -36,13 +36,13 @@ impl Round {
     pub fn score(&self) -> u32 {
         match self.0 {
             ('B', 'X') => 1, // PR
-            ('C', 'Y') => 2, // SP
-            ('A', 'Z') => 3, // RS
-            ('A', 'X') => 4, // RR
+            ('C', 'X') => 2, // SP
+            ('A', 'X') => 3, // RS
+            ('A', 'Y') => 4, // RR
             ('B', 'Y') => 5, // PP
-            ('C', 'Z') => 6, // SS
-            ('C', 'X') => 7, // SR
-            ('A', 'Y') => 8, // RP
+            ('C', 'Y') => 6, // SS
+            ('C', 'Z') => 7, // SR
+            ('A', 'Z') => 8, // RP
             ('B', 'Z') => 9, // PS
             _ => panic!(),
         }
@@ -90,6 +90,6 @@ mod test {
     #[test]
     fn result() {
         let game = Game::load_from("data/test.txt").unwrap();
-        assert_eq!(game.score(), 15);
+        assert_eq!(game.score(), 12);
     }
 }
