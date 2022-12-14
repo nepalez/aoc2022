@@ -11,7 +11,6 @@ pub enum Material {
 pub enum SandState {
     Fall,
     Rest,
-    Away,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -48,7 +47,6 @@ pub struct SandUnit {
     pub position: Position,
     pub state: SandState,
 }
-
 impl SandUnit {
     // Drop the nex sand unit
     pub fn new() -> Self {
@@ -70,7 +68,7 @@ impl SandUnit {
         if let SandState::Fall = self.state {
             let mut pos = self.position.clone();
             if pos.y > cave.bottom {
-                self.state = SandState::Away;
+                self.state = SandState::Rest;
             } else if pos.down() && cave.fill.get(&pos).is_none() {
                 self.position = pos;
             } else if pos.left() && cave.fill.get(&pos).is_none() {
@@ -125,9 +123,9 @@ impl Cave {
     pub fn pour_sand(&mut self) {
         loop {
             let unit = SandUnit::fall_into(&self);
-            match unit.state {
-                SandState::Rest => { self.fill.insert(unit.position, Material::Sand); },
-                _ => break,
+            self.fill.insert(unit.position.clone(), Material::Sand);
+            if unit.position.x == 500 && unit.position.y == 0 {
+                break;
             }
         }
     }
@@ -164,6 +162,6 @@ mod test {
     fn test() {
         let mut cave = Cave::load_from("data/14_test.in").unwrap();
         cave.pour_sand();
-        assert_eq!(cave.count_sand_units(), 24);
+        assert_eq!(cave.count_sand_units(), 93);
     }
 }
