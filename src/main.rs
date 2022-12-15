@@ -1,6 +1,8 @@
 use regex;
 use std::{fs, io, num::ParseIntError, str::FromStr};
 
+const WINDOW: i32 = 4000000;
+
 #[derive(Debug)]
 pub enum Error {
     FileError(io::Error),
@@ -58,8 +60,7 @@ impl Position {
 #[derive(Debug, Clone)]
 struct Signal {
     pub sensor: Position,
-    pub beacon: Position,
-    pub empty_dist: i32,
+    pub open_distance: i32,
 }
 impl FromStr for Signal {
     type Err = Error;
@@ -72,62 +73,63 @@ impl FromStr for Signal {
 
         let sensor = Position::from_str(s)?;
         let beacon = Position::from_str(b)?;
-        let empty_dist = sensor.distance(&beacon);
+        let open_distance = sensor.distance(&beacon);
 
         Ok(Self {
             sensor,
-            beacon,
-            empty_dist,
+            open_distance,
         })
     }
 }
 impl Signal {
-    pub fn empty_interval(&self, row: i32) -> (i32, i32) {
-        let dist = self.empty_dist - (row - self.sensor.y).abs();
-
-        let mut min = self.sensor.x - dist;
-        let mut max = self.sensor.x + dist;
-        if self.beacon.y == row {
-            if self.beacon.x == min {
-                min += 1;
-            } else {
-                max -= 1;
-            }
-        }
-
+    pub fn open_interval(&self, row: i32) -> (i32, i32) {
+        let dist = self.open_distance - (row - self.sensor.y).abs();
+        let min = (self.sensor.x - dist).min(WINDOW).max(0);
+        let max = (self.sensor.x + dist).min(WINDOW).max(0);
         (min, max)
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct CaveRow {
-    empty_space: Vec<(i32, i32)>,
+    hidden_space: Vec<(i32, i32)>,
 }
 impl CaveRow {
-    pub fn add(&mut self, mut new_range: (i32, i32)) {
-        if new_range.0 > new_range.1 {
-            return;
+    pub fn new(area_width: i32) -> Self {
+        Self {
+            hidden_space: vec![(0, area_width)],
         }
-        let mut space = Vec::with_capacity(self.empty_space.len() + 1);
-        for &old_range in self.empty_space.iter() {
-            if old_range.1 < new_range.0 || new_range.1 < old_range.0 {
-                // if the range doesn't intersects with a new one, keep it
-                space.push(old_range);
-            } else {
-                // otherwise, union ranges
-                new_range.0 = new_range.0.min(old_range.0);
-                new_range.1 = new_range.1.max(old_range.1);
-            }
-        }
-        space.push(new_range);
-        self.empty_space = space;
     }
 
-    pub fn empty_size(&self) -> i32 {
-        self.empty_space
-            .iter()
-            .map(|&(start, end)| end - start + 1)
-            .sum()
+    pub fn remove(&mut self, new_interval: (i32, i32)) {
+        if new_interval.0 > new_interval.1 {
+            return;
+        }
+        let mut space = Vec::with_capacity(self.hidden_space.len() + 1);
+        for &old_interval in self.hidden_space.iter() {
+            if old_interval.1 < new_interval.0 || new_interval.1 < old_interval.0 {
+                space.push(old_interval);
+            } else {
+                if new_interval.0 > old_interval.0 {
+                    space.push((old_interval.0, new_interval.0 - 1));
+                }
+                if new_interval.1 < old_interval.1 {
+                    space.push((new_interval.1 + 1, old_interval.1));
+                }
+            }
+        }
+        self.hidden_space = space;
+    }
+
+    pub fn distress_position(&self) -> Option<i32> {
+        if self.hidden_space.len() == 1 {
+            if let Some(&(min, max)) = self.hidden_space.iter().next() {
+                if min == max {
+                    return Some(min);
+                }
+            }
+        }
+        None
     }
 }
 
@@ -150,20 +152,28 @@ impl Device {
         Self::from_str(&input)
     }
 
-    pub fn empty_space(&self, row_index: i32) -> CaveRow {
-        let mut row = CaveRow::default();
-        for signal in self.0.iter() {
-            row.add(signal.empty_interval(row_index));
+    pub fn distress_position(&self, area_width: i32) -> Option<(i32, i32)> {
+        for y in 0..=WINDOW {
+            let mut unknown = CaveRow::new(area_width);
+            for signal in self.0.iter() {
+                unknown.remove(signal.open_interval(y));
+            }
+            if let Some(x) = unknown.distress_position() {
+                return Some((x, y));
+            }
         }
-        row
+        None
+    }
+
+    pub fn tuning_frequency(&self, area_width: i32) -> Option<u64> {
+        let (x, y) = self.distress_position(area_width)?;
+        Some(x as u64 * WINDOW as u64 + y as u64)
     }
 }
 
 fn main() {
     let device = Device::load_from("data/input.txt").unwrap();
-    let row = 2000000;
-    let size = device.empty_space(row).empty_size();
-    println!("The empty size in the row #{} is at least {}", row, size);
+    println!("Tuning frequency is {:?}", device.tuning_frequency(WINDOW));
 }
 
 #[cfg(test)]
@@ -173,6 +183,6 @@ mod test {
     #[test]
     fn result() {
         let device = Device::load_from("data/test.txt").unwrap();
-        assert_eq!(device.empty_space(10).empty_size(), 26);
+        assert_eq!(device.tuning_frequency(20), Some(56000011));
     }
 }
