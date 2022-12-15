@@ -1,33 +1,12 @@
+mod errors;
+
 use crate::Material::{Clay, Geode, Obsidian, Ore};
+use errors::Error;
 use regex;
 use std::cmp::Ordering;
-use std::{collections::HashMap, fs, io, num::ParseIntError, str::FromStr};
+use std::{collections::HashMap, fs, str::FromStr};
 
-const LIMIT: usize = 24;
-
-#[derive(Debug)]
-pub enum Error {
-    ReadInput(io::Error),
-    ParseInt(ParseIntError),
-    ParseRegex(regex::Error),
-    UnexpectedMaterial(String),
-    BlueprintError(usize),
-}
-impl From<io::Error> for Error {
-    fn from(error: io::Error) -> Self {
-        Self::ReadInput(error)
-    }
-}
-impl From<ParseIntError> for Error {
-    fn from(error: ParseIntError) -> Self {
-        Self::ParseInt(error)
-    }
-}
-impl From<regex::Error> for Error {
-    fn from(error: regex::Error) -> Self {
-        Self::ParseRegex(error)
-    }
-}
+const LIMIT: usize = 32;
 
 #[derive(Debug, Clone, Copy, Ord, Eq, PartialEq, Hash)]
 enum Material {
@@ -87,69 +66,103 @@ impl<'a> From<&'a Blueprint> for Process<'a> {
     }
 }
 impl<'a> Process<'a> {
-    fn eventual_geodes(&self) -> usize {
-        self.current_stock(&Geode) + LIMIT.saturating_sub(self.minutes) * self.current_robots(&Geode)
+    pub fn eventual_geodes(&self) -> usize {
+        self.current_stock(&Geode)
+            + LIMIT.saturating_sub(self.minutes) * self.current_robots(&Geode)
     }
-    
-    fn next_versions(&self) -> Vec<Self> {
+
+    pub fn next_versions(&self) -> Vec<Self> {
+        let check = false;
         let mut output = vec![];
-        
+
         // prepare list of variants
         let mut states = vec![];
         for m in vec![Ore, Clay, Obsidian, Geode] {
             let time = self.time_to_build(&m);
             if time == usize::MAX {
-                break
+                break;
             }
             let mut state = self.clone();
             state.build_robot(&m);
-            
+
             // if the branch affect the result
             if state.minutes >= LIMIT {
-                continue
+                continue;
             }
 
             states.push(state);
         }
+        if self.minutes > 4 && self.minutes < 9 {
+            return states;
+        }
+
         if states.is_empty() {
             return vec![];
         }
 
+        if check {
+            println!("-- STATES --");
+            for s in states.iter() {
+                println!("{}: {:?} ({:?})", s.minutes, s.history, s.cycle());
+            }
+        }
+
         // get the senior out
         output.push(states.pop().unwrap());
-        
+
         // order versions by cycles
         states.sort_by(|a, b| {
             let a = a.cycle();
             let b = b.cycle();
 
-            let result = if a.1 == i32::MAX || b.1 == i32::MAX {
-                b.0.cmp(&a.0)
+            let result = if a.1 == f32::MAX || b.1 == f32::MAX {
+                b.0.partial_cmp(&a.0).unwrap()
             } else {
-                b.1.cmp(&a.1)
+                b.1.partial_cmp(&a.1).unwrap()
             };
             if let Ordering::Equal = result {
-                b.0.cmp(&a.0)
+                b.0.partial_cmp(&a.0).unwrap()
             } else {
                 result
             }
         });
+
+        if check {
+            println!("-- SORTED STATES --");
+            for s in states.iter() {
+                println!("{}: {:?} ({:?})", s.minutes, s.history, s.cycle());
+            }
+        }
 
         // get the best option if it exists
         if let Some(mut first) = states.pop() {
             // try mixing the second option with the best one to decide if they can be merged
             if let Some(second) = states.pop() {
                 let mut mixed = self.clone();
-                mixed.build_sequence(&vec![second.history.clone().pop().unwrap(), first.history.clone().pop().unwrap()]);
+                mixed.build_sequence(&vec![
+                    second.history.clone().pop().unwrap(),
+                    first.history.clone().pop().unwrap(),
+                ]);
+                if check {
+                    println!("-- MIXING 1 --");
+                    println!("{}: {:?}", mixed.minutes, mixed.history);
+                }
                 if mixed.minutes <= first.minutes {
-                    first = second;
+                    first = mixed;
                 }
             }
 
             // try mixing the selected version with the geode-building to decide if they can be merged
             if let Some(geode) = output.pop() {
                 let mut mixed = self.clone();
-                mixed.build_sequence(&vec![first.history.clone().pop().unwrap(), geode.history.clone().pop().unwrap()]);
+                mixed.build_sequence(&vec![
+                    first.history.clone().pop().unwrap(),
+                    geode.history.clone().pop().unwrap(),
+                ]);
+                if check {
+                    println!("-- MIXING 2 --");
+                    println!("{}: {:?}", mixed.minutes, mixed.history);
+                }
                 if mixed.minutes > first.minutes {
                     output.push(geode);
                 }
@@ -158,12 +171,20 @@ impl<'a> Process<'a> {
             output.push(first);
         }
 
+        if check {
+            println!("-- FINALLY --");
+            for o in output.iter() {
+                println!("{}: {:?}", o.minutes, o.history);
+            }
+            println!("---");
+        }
+
         // it can be empty
         output
     }
-    
+
     // Build a sequence of robots
-    fn build_sequence(&mut self, robots: &Vec<Material>) {
+    pub fn build_sequence(&mut self, robots: &Vec<Material>) {
         for robot in robots.iter() {
             self.build_robot(robot);
         }
@@ -178,8 +199,9 @@ impl<'a> Process<'a> {
             let stock = self.current_stock(&material);
             let robots = self.current_robots(&material);
             let consumption = self.consumption(&material, robot);
-            
-            self.stock.insert(material, stock + robots * time - consumption);
+
+            self.stock
+                .insert(material, stock + robots * time - consumption);
         }
 
         self.add_robot(robot.clone());
@@ -187,20 +209,24 @@ impl<'a> Process<'a> {
     }
 
     // Time to build the geode robot
-    fn cycle(&self) -> (i32, i32) {
+    fn cycle(&self) -> (f32, f32) {
         if self.current_robots(&Clay) == 0 {
-            return (i32::MAX, i32::MAX);
+            return (f32::MAX, f32::MAX);
         }
 
-        let mut minor = self.consumption(&Ore, &Clay) as i32 / self.current_robots(&Clay) as i32;
-        minor = minor.max(self.consumption(&Ore, &Obsidian) as i32 / self.current_robots(&Ore) as i32);
-        minor = minor.max(self.consumption(&Clay, &Obsidian) as i32 / self.current_robots(&Clay) as i32);
-       if self.current_robots(&Obsidian) == 0 {
-            return (minor, i32::MAX)
+        let mut minor = self.consumption(&Ore, &Clay) as f32 / self.current_robots(&Clay) as f32;
+        minor =
+            minor.max(self.consumption(&Ore, &Obsidian) as f32 / self.current_robots(&Ore) as f32);
+        minor = minor
+            .max(self.consumption(&Clay, &Obsidian) as f32 / self.current_robots(&Clay) as f32);
+        if self.current_robots(&Obsidian) == 0 {
+            return (minor, f32::MAX);
         }
- 
-        let mut major = minor.max(self.consumption(&Ore, &Geode) as i32 / self.current_robots(&Ore) as i32);
-        major = major.max(self.consumption(&Obsidian, &Geode) as i32 / self.current_robots(&Obsidian) as i32);
+
+        let mut major = self.consumption(&Ore, &Geode) as f32 / self.current_robots(&Ore) as f32;
+        major = major.max(
+            self.consumption(&Obsidian, &Geode) as f32 / self.current_robots(&Obsidian) as f32,
+        );
         (minor, major)
     }
 
@@ -214,11 +240,11 @@ impl<'a> Process<'a> {
         for source in vec![Ore, Clay, Obsidian] {
             let deficit = self.deficit(&source, target) as f32;
             if deficit == 0.0 {
-                continue
+                continue;
             }
             let robots = self.current_robots(&source) as f32;
             if robots == 0.0 {
-                return usize::MAX
+                return usize::MAX;
             }
             time = time.max((deficit / robots).ceil() as usize + 1);
         }
@@ -306,7 +332,8 @@ impl Blueprint {
                 }
             }
         }
-        result.eventual_geodes() * self.id
+        println!("{}: {:?}", result.minutes, result.history);
+        result.eventual_geodes()
     }
 
     pub fn consumption(&self, source: &Material, target: &Material) -> usize {
@@ -355,6 +382,12 @@ mod test {
     #[test]
     fn result() {
         let mut factory = Factory::load_from("data/input.txt").unwrap();
-        assert_eq!(factory.quality(), 33);
+        let mut list = factory.0.iter();
+
+        println!("{:?}", list.next().unwrap().quality());
+        println!("{:?}", list.next().unwrap().quality());
+        println!("{:?}", list.next().unwrap().quality());
+
+        assert_eq!(12, 56);
     }
 }
