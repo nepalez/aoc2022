@@ -1,4 +1,4 @@
-use crate::Action::{Math, Yell};
+use crate::Action::{Math, Skip, Yell};
 use crate::Error::InvalidOperation;
 use crate::Operation::{Add, Divide, Minus, Multiply};
 use regex;
@@ -51,18 +51,18 @@ impl Operation {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 enum Action {
+    Skip(Key),
     Yell(i128),
     Math(Operation, Key, Key),
 }
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
-struct Monkey {
-    pub root: bool,
+struct Node {
     pub key: Key,
     pub action: Action,
     pub value: Option<i128>,
 }
-impl FromStr for Monkey {
+impl FromStr for Node {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -74,7 +74,6 @@ impl FromStr for Monkey {
                 return Ok(Self {
                     key,
                     action,
-                    root: false,
                     value: None,
                 });
             }
@@ -83,7 +82,6 @@ impl FromStr for Monkey {
         let reg = regex::Regex::from_str(r"(.+)[:] (.{4}) (.) (.{4})")?;
         let cap = reg.captures(s).ok_or(InvalidOperation)?;
         let key = cap.get(1).ok_or(InvalidOperation)?.as_str();
-        let root = key == "root";
         let key = key.into();
         let left: Key = cap.get(2).ok_or(InvalidOperation)?.as_str().into();
         let right: Key = cap.get(4).ok_or(InvalidOperation)?.as_str().into();
@@ -96,7 +94,6 @@ impl FromStr for Monkey {
         };
 
         Ok(Self {
-            root,
             key,
             action: Math(operation, left, right),
             value: None,
@@ -105,73 +102,152 @@ impl FromStr for Monkey {
 }
 
 #[derive(Debug)]
-pub struct Riddle {
-    monkeys: HashMap<Key, Monkey>,
-    root: Key,
+pub struct Solver {
+    nodes: HashMap<Key, Node>,
 }
-impl FromStr for Riddle {
+impl FromStr for Solver {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut monkeys = HashMap::new();
-        let mut root: Option<Key> = None;
+        let mut nodes = HashMap::new();
         for line in s.lines() {
-            let monkey = Monkey::from_str(line)?;
-            if monkey.root {
-                root = Some(monkey.key.clone().into());
-            }
-            monkeys.insert(monkey.key.clone(), monkey);
+            let node = Node::from_str(line)?;
+            nodes.insert(node.key.clone(), node);
         }
-        if let Some(root) = root {
-            Ok(Self { root, monkeys })
-        } else {
-            Err(Error::MissedRoot)
-        }
+        Ok(Self { nodes })
     }
 }
-impl Riddle {
+impl Solver {
     pub fn load_from(path: &str) -> Result<Self, Error> {
         Self::from_str(&fs::read_to_string(path)?)
     }
 
     pub fn solve(&mut self) -> Option<i128> {
+        // build the tree node => parent
+        let mut parents: HashMap<Key, Key> = HashMap::new();
+        for (key, node) in self.nodes.iter() {
+            match &node.action {
+                Math(_, left, right) => {
+                    parents.insert(left.clone(), key.clone());
+                    parents.insert(right.clone(), key.clone());
+                }
+                _ => {}
+            }
+        }
+
+        // rebuild the human node
+        let mut prev = "humn";
+        let mut curr = parents.get(prev)?;
+        self.nodes.get_mut(prev)?.action = Skip(curr.clone());
+
+        // go up and rebuild parent nodes from root to humn
+        let mut next: &Key;
+        while curr != "root" {
+            next = parents.get(curr)?;
+            let action = if let Math(op, left, right) = &self.nodes.get(curr)?.action {
+                match op {
+                    Add => {
+                        if left == prev {
+                            Math(Minus, next.clone(), right.clone())
+                        } else {
+                            Math(Minus, next.clone(), left.clone())
+                        }
+                    }
+                    Minus => {
+                        if left == prev {
+                            Math(Add, next.clone(), right.clone())
+                        } else {
+                            Math(Minus, left.clone(), next.clone())
+                        }
+                    }
+                    Multiply => {
+                        if left == prev {
+                            Math(Divide, next.clone(), right.clone())
+                        } else {
+                            Math(Divide, next.clone(), left.clone())
+                        }
+                    }
+                    Divide => {
+                        if left == prev {
+                            Math(Multiply, next.clone(), right.clone())
+                        } else {
+                            Math(Divide, left.clone(), next.clone())
+                        }
+                    }
+                }
+            } else {
+                panic!()
+            };
+            self.nodes.insert(
+                curr.into(),
+                Node {
+                    key: curr.clone(),
+                    action,
+                    value: None,
+                },
+            );
+            (prev, curr) = (curr, next);
+        }
+
+        // rebuild the root node
+        let action = if let Math(_, left, right) = &self.nodes.get(curr)?.action {
+            if left == prev {
+                Skip(right.clone())
+            } else {
+                Skip(left.clone())
+            }
+        } else {
+            panic!()
+        };
+        self.nodes.insert(
+            curr.into(),
+            Node {
+                key: curr.clone(),
+                action,
+                value: None,
+            },
+        );
+
         // build stack
         let mut stack = vec![];
-        let mut queue = VecDeque::from([self.root.clone()]);
+        let mut queue = VecDeque::from([String::from("humn")]);
         while let Some(cursor) = queue.pop_front() {
-            let monkey = self.monkeys.get(&cursor)?;
-            match &monkey.action {
+            let node = self.nodes.get(&cursor)?;
+            match &node.action {
                 Math(_, left, right) => {
                     queue.push_back(right.clone());
                     queue.push_back(left.clone());
                 }
+                Skip(key) => {
+                    queue.push_back(key.clone());
+                }
                 _ => {}
             }
-            println!("{:?}", monkey);
             stack.push(cursor.clone());
         }
 
         // calculate stack
         while let Some(key) = stack.pop() {
-            let monkey = self.monkeys.get(&key)?;
-            let value = match &monkey.action {
+            let node = self.nodes.get(&key)?;
+            let value = match &node.action {
                 Yell(value) => value.clone(),
+                Skip(child) => self.nodes.get(child)?.value?,
                 Math(op, left, right) => {
-                    let left = self.monkeys.get(left)?.value?;
-                    let right = self.monkeys.get(right)?.value?;
+                    let left = self.nodes.get(left)?.value?;
+                    let right = self.nodes.get(right)?.value?;
                     op.solve(left, right)
                 }
             };
-            self.monkeys.get_mut(&key)?.value = Some(value);
+            self.nodes.get_mut(&key)?.value = Some(value);
         }
 
-        self.monkeys.get(&self.root)?.value
+        self.nodes.get("humn")?.value
     }
 }
 
 fn main() {
-    let mut calculator = Riddle::load_from("data/input.txt").unwrap();
-    println!("The answer is {}", calculator.solve().unwrap());
+    let mut solver = Solver::load_from("data/input.txt").unwrap();
+    println!("The answer is {}", solver.solve().unwrap());
 }
 
 #[cfg(test)]
@@ -180,7 +256,7 @@ mod test {
 
     #[test]
     fn result() {
-        let mut calculator = Riddle::load_from("data/test.txt").unwrap();
-        assert_eq!(calculator.solve().unwrap(), 152);
+        let mut solver = Solver::load_from("data/test.txt").unwrap();
+        assert_eq!(solver.solve().unwrap(), 301);
     }
 }
