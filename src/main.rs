@@ -27,7 +27,6 @@ pub enum Material {
 pub enum SandState {
     Fall,
     Rest,
-    Away,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -86,7 +85,7 @@ impl SandUnit {
         if let SandState::Fall = self.state {
             let mut pos = self.position;
             if pos.y > cave.bottom {
-                self.state = SandState::Away;
+                self.state = SandState::Rest;
             } else if pos.down() && cave.fill.get(&pos).is_none() {
                 self.position = pos;
             } else if pos.left() && cave.fill.get(&pos).is_none() {
@@ -139,10 +138,9 @@ impl Cave {
     pub fn pour_sand(&mut self) {
         loop {
             let unit = SandUnit::drop(&self);
-            if let SandState::Away = unit.state {
+            self.fill.insert(unit.position, Material::Sand);
+            if unit.position.y == 0 {
                 break;
-            } else {
-                self.fill.insert(unit.position, Material::Sand);
             }
         }
     }
@@ -175,6 +173,6 @@ mod test {
     fn test() {
         let mut cave = Cave::load_from("data/test.txt").unwrap();
         cave.pour_sand();
-        assert_eq!(cave.count_sand_units(), 24);
+        assert_eq!(cave.count_sand_units(), 93);
     }
 }
