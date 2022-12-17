@@ -89,7 +89,7 @@ impl FromStr for Valve {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Graph {
     list: HashMap<Key, Valve>,
     start: Key,
@@ -115,7 +115,7 @@ impl Graph {
     pub fn load_from(path: &str) -> Result<Self, Error> {
         Self::from_str(&fs::read_to_string(path)?)
     }
-    
+
     fn remove_broken_valves(&mut self) {
         let broken_keys: Vec<Key> = self
             .list
@@ -129,33 +129,37 @@ impl Graph {
         }
     }
 
-    fn remove_valve(&mut self, broken_key: &Key) {
+    fn remove_valve(&mut self, removed_key: &Key) {
         // prepare list of all paths through the removed key
         let mut list = vec![];
-        let broken_valve = self.list.get(broken_key).unwrap();
-        
+        let removed_value = self.list.get(removed_key).unwrap();
+
         for (&source_key, source_valve) in self.list.iter() {
-            if let Some(&time_from_source) = source_valve.neighbours.get(broken_key) {
-                for (&target_key, &time_to_target) in broken_valve.neighbours.iter() {
+            if let Some(&time_from_source) = source_valve.neighbours.get(removed_key) {
+                for (&target_key, &time_to_target) in removed_value.neighbours.iter() {
                     if source_key != target_key {
                         list.push((source_key, target_key, time_from_source + time_to_target));
                     }
                 }
             }
         }
-        
+
         // add direct links and remove links to broken key
         for (source_key, target_key, new_time) in list.into_iter() {
             let valve = self.list.get_mut(&source_key).unwrap();
-            let old_time = valve.neighbours.get(&target_key).unwrap_or(&new_time).clone();
+            let old_time = valve
+                .neighbours
+                .get(&target_key)
+                .unwrap_or(&new_time)
+                .clone();
             let new_time = old_time.min(new_time.clone());
             valve.neighbours.insert(target_key, new_time);
-            valve.neighbours.remove(broken_key);
+            valve.neighbours.remove(removed_key);
         }
 
         // remove broken valve unless it is a start
-        if broken_key != &self.start {
-            self.list.remove(broken_key);
+        if removed_key != &self.start {
+            self.list.remove(removed_key);
         }
     }
 
@@ -218,51 +222,111 @@ impl Graph {
     }
 }
 
+const TOTAL_LIMIT: usize = 26;
+// TODO: just an euristics
+//       its better to count it on every step as a max distance from both nodes
+const LOCAL_LIMIT: usize = 15;
+
 #[derive(Debug, Clone)]
 struct Path<'a> {
     pub released: Release,
-    pub path: VecDeque<Key>,
-    graph: &'a Graph,
-    current: &'a Valve,
-    time_left: Time,
+    pub paths: (VecDeque<Key>, VecDeque<Key>),
+    currents: (&'a Valve, &'a Valve),
+    times_left: (Time, Time),
+    time_limit: Time,
     visited: HashSet<Key>,
+    graph: &'a Graph,
+    next_times_left: (Time, Time),
+    next_released: Release,
+    next_visited: HashSet<Key>,
 }
 impl<'a> Path<'a> {
     pub fn new(graph: &'a Graph) -> Self {
+        let start = graph.list.get(&Key('A', 'A')).unwrap();
+        
         Path {
-            graph,
-            current: graph.list.get(&graph.start).unwrap(),
-            visited: HashSet::from([graph.start]),
-            path: VecDeque::new(),
-            time_left: 30,
             released: 0,
+            paths: (VecDeque::new(), VecDeque::new()),
+            currents: (start, start),
+            times_left: (TOTAL_LIMIT, TOTAL_LIMIT),
+            next_times_left: (TOTAL_LIMIT, TOTAL_LIMIT),
+            time_limit: (TOTAL_LIMIT - LOCAL_LIMIT),
+            next_released: 0,
+            visited: HashSet::from([start.key]),
+            next_visited: HashSet::from([start.key]),
+            graph,
         }
     }
 
-    pub fn add_all(mut self) -> Vec<Self> {
+    pub fn visit(mut self) -> Vec<Self> {
+        let mut stopped = (true, true);
         let mut output = vec![];
-        for (_, v) in self.graph.list.iter() {
-            if let Some(path) = self.clone().add_one(v) {
+        for (_, valve) in self.graph.list.iter() {
+            if let Some(path) = self.clone().add_first(valve) {
                 output.push(path);
+                stopped.0 = false;
+            }
+            if let Some(path) = self.clone().add_second(valve) {
+                output.push(path);
+                stopped.1 = false;
             }
         }
+        if stopped.0 {
+            self.times_left.0 = 0;
+        }
+        if stopped.1 {
+            self.times_left.1 = 0;
+        }
         if output.is_empty() {
-            self.time_left = 0; // just wait on the last vault until the end
             output.push(self);
         }
         output
     }
 
-    fn add_one(mut self, valve: &'a Valve) -> Option<Self> {
+    fn add_first(mut self, valve: &'a Valve) -> Option<Self> {
         let key = valve.key;
-        if self.visited.contains(&key) {
+        if self.times_left.0 <= self.time_limit {
             None
-        } else if let Some(time) = self.current.neighbours.get(&valve.key) {
+        } else if self.visited.contains(&key) {
+            None
+        } else if let Some(time) = self.currents.0.neighbours.get(&valve.key) {
             self.visited.insert(key);
-            self.path.push_back(key);
-            self.time_left = self.time_left.saturating_sub(time + 1);
-            self.released += valve.release * self.time_left;
-            self.current = valve;
+            self.times_left.0 = self.times_left.0.saturating_sub(time + 1);
+            self.released += valve.release * self.times_left.0;
+
+            if self.paths.0.is_empty() {
+                self.next_times_left.0 = self.times_left.0;
+                self.next_released += valve.release * self.times_left.0;
+                self.next_visited.insert(key);
+            }
+
+            self.paths.0.push_back(key);
+            self.currents.0 = valve;
+            Some(self)
+        } else {
+            None
+        }
+    }
+
+    fn add_second(mut self, valve: &'a Valve) -> Option<Self> {
+        let key = valve.key;
+        if self.times_left.1 <= self.time_limit {
+            None
+        } else if self.visited.contains(&key) {
+            None
+        } else if let Some(time) = self.currents.1.neighbours.get(&valve.key) {
+            self.visited.insert(key);
+            self.times_left.1 = self.times_left.1.saturating_sub(time + 1);
+            self.released += valve.release * self.times_left.1;
+
+            if self.paths.1.is_empty() {
+                self.next_times_left.1 = self.times_left.1;
+                self.next_released += valve.release * self.times_left.1;
+                self.next_visited.insert(key);
+            }
+
+            self.paths.1.push_back(key);
+            self.currents.1 = valve;
             Some(self)
         } else {
             None
@@ -285,15 +349,44 @@ impl<'a> Travel<'a> {
             best_path: path,
         }
     }
+    
+    pub fn calculate(&mut self) {
+        loop {
+            self.visit_all();
 
+            let mut path = self.best_path.clone();
+            if path.paths.0.is_empty() && path.paths.1.is_empty() {
+                break;
+            }
+            
+            // remember first valves as new currents
+            if let Some(key) = path.paths.0.pop_front() {
+                path.currents.0 = self.graph.list.get(&key).unwrap();
+            }
+            if let Some(key) = path.paths.1.pop_front() {
+                path.currents.1 = self.graph.list.get(&key).unwrap();
+            }
+            path.paths = (VecDeque::new(), VecDeque::new());
+            path.visited = path.next_visited.clone();
+            path.released = path.next_released;
+            path.times_left = path.next_times_left;
+            path.time_limit = path.times_left.0.saturating_sub(LOCAL_LIMIT);
+            path.time_limit = path.time_limit.min(path.times_left.1.saturating_sub(LOCAL_LIMIT));
+            
+            self.best_path = path.clone();
+            self.queue = vec![path];
+        }
+    }
+    
     pub fn visit_all(&mut self) -> Release {
         while let Some(_) = self.visit() {}
         self.best_path.released
     }
 
     fn visit(&mut self) -> Option<()> {
-        for path in self.queue.pop()?.add_all() {
-            if path.time_left == 0 {
+        for path in self.queue.pop()?.visit() {
+            // when nobody can move
+            if path.times_left.0 == 0 && path.times_left.1 == 0 {
                 if path.released > self.best_path.released {
                     self.best_path = path;
                 }
@@ -308,7 +401,8 @@ impl<'a> Travel<'a> {
 fn main() {
     let graph = Graph::load_from("data/input.txt").unwrap();
     let mut travel = Travel::new(&graph);
-    println!("Best release is {}", travel.visit_all())
+    travel.visit_all();
+    println!("Best release is {}", travel.best_path.released);
 }
 
 #[cfg(test)]
@@ -319,6 +413,7 @@ mod test {
     fn result() {
         let graph = Graph::load_from("data/test.txt").unwrap();
         let mut travel = Travel::new(&graph);
-        assert_eq!(travel.visit_all(), 1651);
+        travel.calculate();
+        assert_eq!(travel.best_path.released, 1707);
     }
 }
