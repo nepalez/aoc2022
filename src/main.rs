@@ -18,13 +18,13 @@ impl From<ParseIntError> for Error {
 
 #[derive(Debug, Default)]
 pub struct List {
-    items: Vec<(usize, i32)>,
-    size: i32,
+    items: Vec<(usize, i128)>,
+    size: i128,
 }
 impl List {
-    pub fn shift(&mut self, index: usize, number: i32) {
+    pub fn shift(&mut self, index: usize, number: i128) {
         let old_index = self.find(index, number);
-        let mut new_index = (old_index as i32 + number) % (self.size - 1);
+        let mut new_index = (old_index as i128 + number) % (self.size - 1);
         if new_index <= 0 {
             new_index += self.size - 1;
         }
@@ -33,40 +33,40 @@ impl List {
         self.items.insert(new_index, (index, number));
     }
 
-    pub fn find(&self, index: usize, number: i32) -> usize {
+    pub fn find(&self, index: usize, number: i128) -> usize {
         self.items
             .iter()
             .position(|&(i, n)| i == index && n == number)
             .unwrap()
     }
 
-    pub fn find_number(&self, number: i32) -> usize {
+    pub fn find_number(&self, number: i128) -> usize {
         self.items.iter().position(|&(_, n)| n == number).unwrap()
     }
 
-    pub fn get(&self, position: usize) -> (usize, i32) {
+    pub fn get(&self, position: usize) -> (usize, i128) {
         self.items
             .get(position % (self.size as usize))
             .unwrap()
             .clone()
     }
 }
-impl From<&Vec<i32>> for List {
-    fn from(input: &Vec<i32>) -> Self {
+impl From<&Vec<i128>> for List {
+    fn from(input: &Vec<i128>) -> Self {
         let mut items = vec![];
         for (index, &number) in input.iter().enumerate() {
             items.push((index, number));
         }
         Self {
             items,
-            size: input.len() as i32,
+            size: input.len() as i128,
         }
     }
 }
 
 #[derive(Debug)]
 pub struct Cipher {
-    source: Vec<i32>,
+    source: Vec<i128>,
     list: List,
 }
 impl FromStr for Cipher {
@@ -75,7 +75,7 @@ impl FromStr for Cipher {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut source = vec![];
         for line in s.lines() {
-            let number = line.parse::<i32>()?;
+            let number = line.parse::<i128>()? * 811589153;
             source.push(number);
         }
         let list = List::from(&source);
@@ -86,10 +86,12 @@ impl Cipher {
     pub fn load_from(path: &str) -> Result<Self, Error> {
         Self::from_str(&fs::read_to_string(path)?)
     }
-
-    pub fn decrypt(&mut self) -> i32 {
-        for (i, &n) in self.source.iter().enumerate() {
-            self.list.shift(i, n);
+    
+    pub fn decrypt(&mut self) -> i128 {
+        for _ in 0..10 {
+            for (i, &n) in self.source.iter().enumerate() {
+                self.list.shift(i, n);
+            }
         }
 
         let init = self.list.find_number(0);
@@ -114,6 +116,6 @@ mod test {
     #[test]
     fn result() {
         let mut cipher = Cipher::load_from("data/test.txt").unwrap();
-        assert_eq!(cipher.decrypt(), 3);
+        assert_eq!(cipher.decrypt(), 1623178306);
     }
 }
