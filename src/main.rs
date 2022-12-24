@@ -30,13 +30,16 @@ enum Turn {
     Right,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 enum Direction {
     Right,
     Left,
     Down,
     Up,
 }
+
+#[derive(Debug, Eq, PartialEq, Hash)]
+struct Move((usize, usize), Direction);
 
 #[derive(Debug)]
 struct Field {
@@ -45,6 +48,7 @@ struct Field {
     cells: HashMap<(usize, usize), bool>,
     rows: HashMap<usize, (usize, usize)>,
     cols: HashMap<usize, (usize, usize)>,
+    wraps: HashMap<Move, Move>,
 }
 impl Field {
     pub fn stroll(&mut self, (turn, steps): &(Turn, usize)) {
@@ -71,31 +75,143 @@ impl Field {
 
     fn step(&mut self) -> bool {
         let mut cell = self.cell.clone();
-        match self.direction {
-            Direction::Up => cell.0 -= 1,
-            Direction::Down => cell.0 += 1,
-            Direction::Left => cell.1 -= 1,
-            Direction::Right => cell.1 += 1,
-        }
-        if !self.cells.contains_key(&cell) {
-            cell = self.wrap();
+        let mut direction = self.direction.clone();
+        if let Some(Move(wrap, dir)) = self.wraps.get(&Move(cell, direction.clone())) {
+            (cell, direction) = (wrap.clone(), dir.clone());
+        } else {
+            match self.direction {
+                Direction::Up => cell.0 -= 1,
+                Direction::Down => cell.0 += 1,
+                Direction::Left => cell.1 -= 1,
+                Direction::Right => cell.1 += 1,
+            }
         }
         if self.cells.get(&cell).unwrap() == &true {
             false
         } else {
             self.cell = cell;
+            self.direction = direction.clone();
             true
         }
     }
 
-    fn wrap(&mut self) -> (usize, usize) {
-        let row = self.rows.get(&self.cell.0).unwrap();
-        let col = self.cols.get(&self.cell.1).unwrap();
-        match self.direction {
-            Direction::Up => (col.1, self.cell.1),
-            Direction::Down => (col.0, self.cell.1),
-            Direction::Left => (self.cell.0, row.1),
-            Direction::Right => (self.cell.0, row.0),
+    fn populate_wraps(&mut self) {
+        // for i in 1..=4 {
+        //     self.wraps.insert(
+        //         Move((1, 8 + i), Direction::Up),
+        //         Move((5, 5 - i), Direction::Down),
+        //     );
+        //     self.wraps.insert(
+        //         Move((5, i), Direction::Up),
+        //         Move((1, 13 - i), Direction::Down),
+        //     );
+        //     self.wraps.insert(
+        //         Move((5, 4 + i), Direction::Up),
+        //         Move((i, 9), Direction::Right),
+        //     );
+        //     self.wraps.insert(
+        //         Move((i, 9), Direction::Left),
+        //         Move((5, 4 + i), Direction::Down),
+        //     );
+        //     self.wraps.insert(
+        //         Move((i, 12), Direction::Right),
+        //         Move((13 - i, 16), Direction::Left),
+        //     );
+        //     self.wraps.insert(
+        //         Move((8 + i, 16), Direction::Right),
+        //         Move((5 - i, 12), Direction::Left),
+        //     );
+        //     self.wraps.insert(
+        //         Move((4 + i, 12), Direction::Right),
+        //         Move((9, 17 - i), Direction::Down),
+        //     );
+        //     self.wraps.insert(
+        //         Move((9, 12 + i), Direction::Up),
+        //         Move((9 - i, 12), Direction::Left),
+        //     );
+        //     self.wraps.insert(
+        //         Move((4 + i, 1), Direction::Left),
+        //         Move((12, 17 - i), Direction::Up),
+        //     );
+        //     self.wraps.insert(
+        //         Move((12, 12 + i), Direction::Down),
+        //         Move((9 - i, 1), Direction::Right),
+        //     );
+        //     self.wraps.insert(
+        //         Move((8, i), Direction::Down),
+        //         Move((12, 13 - i), Direction::Up),
+        //     );
+        //     self.wraps.insert(
+        //         Move((12, 8 + i), Direction::Down),
+        //         Move((8, 5 - i), Direction::Up),
+        //     );
+        //     self.wraps.insert(
+        //         Move((8, 4 + i), Direction::Down),
+        //         Move((13 - i, 9), Direction::Right),
+        //     );
+        //     self.wraps.insert(
+        //         Move((8 + i, 9), Direction::Left),
+        //         Move((8, 9 - i), Direction::Up),
+        //     );
+        // }
+
+        for i in 1..=50 {
+            self.wraps.insert(
+                Move((1, 50 + i), Direction::Up),
+                Move((150 + i, 1), Direction::Right),
+            );
+            self.wraps.insert(
+                Move((150 + i, 1), Direction::Left),
+                Move((1, 50 + i), Direction::Down),
+            );
+            self.wraps.insert(
+                Move((1, 100 + i), Direction::Up),
+                Move((200, i), Direction::Up),
+            );
+            self.wraps.insert(
+                Move((200, i), Direction::Down),
+                Move((1, 100 + i), Direction::Down),
+            );
+            self.wraps.insert(
+                Move((i, 150), Direction::Right),
+                Move((151 - i, 100), Direction::Left),
+            );
+            self.wraps.insert(
+                Move((100 + i, 100), Direction::Right),
+                Move((51 - i, 150), Direction::Left),
+            );
+            self.wraps.insert(
+                Move((50, 100 + i), Direction::Down),
+                Move((50 + i, 100), Direction::Left),
+            );
+            self.wraps.insert(
+                Move((50 + i, 100), Direction::Right),
+                Move((50, 100 + i), Direction::Up),
+            );
+            self.wraps.insert(
+                Move((150, 50 + i), Direction::Down),
+                Move((150 + i, 50), Direction::Left),
+            );
+            self.wraps.insert(
+                Move((150 + i, 50), Direction::Right),
+                Move((150, 50 + i), Direction::Up),
+            );
+            self.wraps.insert(
+                Move((i, 51), Direction::Left),
+                Move((151 - i, 1), Direction::Right),
+            );
+            self.wraps.insert(
+                Move((100 + i, 1), Direction::Left),
+                Move((51 - i, 51), Direction::Right),
+            );
+            self.wraps.insert(
+                Move((50 + i, 51), Direction::Left),
+                Move((101, i), Direction::Down),
+            );
+            self.wraps.insert(
+                Move((101, i), Direction::Up),
+                Move((50 + i, 51), Direction::Right),
+            );
         }
     }
 }
@@ -128,13 +244,16 @@ impl FromStr for Field {
         }
         let cell = (1, rows.get(&1).unwrap().0.clone());
 
-        Ok(Self {
+        let mut field = Self {
             cells,
             rows,
             cols,
             cell,
+            wraps: HashMap::new(),
             direction: Direction::Down,
-        })
+        };
+        field.populate_wraps();
+        Ok(field)
     }
 }
 
@@ -186,12 +305,12 @@ impl MonkeyMap {
         for stroll in self.route.0.iter() {
             self.field.stroll(stroll);
         }
-
+        
         self.field.cell.0 * 1000
             + self.field.cell.1 * 4
             + match self.field.direction {
-                Direction::Down => 3,
-                Direction::Up => 1,
+                Direction::Down => 1,
+                Direction::Up => 3,
                 Direction::Right => 0,
                 Direction::Left => 2,
             }
@@ -210,6 +329,6 @@ mod test {
     #[test]
     fn result() {
         let mut monkey_map = MonkeyMap::load_from("data/test.txt").unwrap();
-        assert_eq!(monkey_map.password(), 6032)
+        assert_eq!(monkey_map.password(), 5031)
     }
 }
