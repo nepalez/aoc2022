@@ -148,6 +148,14 @@ impl Elves {
     pub fn load_from(path: &str) -> Result<Self, Error> {
         Self::from_str(&fs::read_to_string(path)?)
     }
+
+    pub fn count_rounds(&mut self) -> usize {
+        let mut last = 1;
+        while self.run() {
+            last += 1;
+        }
+        last
+    }
     
     pub fn goto_round(&mut self, rounds: usize) {
         for _ in 0..rounds {
@@ -240,8 +248,7 @@ impl Elves {
 
 fn main() {
     let mut elves = Elves::load_from("data/input.txt").unwrap();
-    elves.goto_round(10);
-    println!("Empty ground: {}", elves.empty_ground());
+    println!("The first sleepy round is: {}", elves.count_rounds());
 }
 
 #[cfg(test)]
@@ -251,8 +258,6 @@ mod test {
     #[test]
     fn result() {
         let mut elves = Elves::load_from("data/test2.txt").unwrap();
-        elves.goto_round(10);
-        println!("{}", elves);
-        assert_eq!(elves.empty_ground(), 110);
+        assert_eq!(elves.count_rounds(), 20);
     }
 }
