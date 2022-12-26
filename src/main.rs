@@ -202,6 +202,7 @@ impl FromStr for Route {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut area = Area::from_str(s)?;
+        area.next();
         let queue = HashSet::from([Position { x: 0, y: 1, time: 0 }]);
         Ok(Self { area, queue })
     }
@@ -211,30 +212,34 @@ impl Route {
         Self::from_str(&fs::read_to_string(path)?)
     }
     
-    pub fn calculate(&mut self) -> Option<usize> {
-        let mut prev = HashSet::from([Position { time: 0, x: 0, y: 1 }]);
+    pub fn run_to_line(&mut self, target: usize) -> usize {
         loop {
-            self.area.next();
             let mut next = HashSet::new();
-            for pos in prev.iter() {
-                if pos.x > self.area.bottom {
-                    return Some(pos.time);
+            for pos in self.queue.iter() {
+                if pos.x == target {
+                    let time = pos.time;
+                    self.queue = HashSet::from([pos.clone()]);
+                    return time;
                 }
                 for step in self.area.steps(&pos) {
                     next.insert(step);
                 }
             }
-            if next.is_empty() {
-                return None;
-            }
-            prev = next;
+            self.queue = next;
+            self.area.next();
         }
+    }
+    
+    pub fn total_time(&mut self) -> usize {
+        self.run_to_line(self.area.bottom + 1);
+        self.run_to_line(0);
+        self.run_to_line(self.area.bottom + 1)
     }
 }
 
 fn main() {
     let mut route = Route::load_from("data/input.txt").unwrap();
-    println!("The exit has been reached on minute {:?}", route.calculate());
+    println!("The trip has been finished on minute {}", route.total_time());
 }
 
 #[cfg(test)]
@@ -244,6 +249,6 @@ mod test {
     #[test]
     fn result() {
         let mut route = Route::load_from("data/test2.txt").unwrap();
-        assert_eq!(route.calculate().unwrap(), 18);
+        assert_eq!(route.total_time(), 54);
     }
 }
